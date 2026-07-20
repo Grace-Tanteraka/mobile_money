@@ -1,6 +1,3 @@
-# ETU004362 - Lancer le projet
-
-
 ## 1. Emplacement des fichiers SQL
 - `base.sql` : `./base.sql`
 - `donne.sql` : `./donne.sql`
