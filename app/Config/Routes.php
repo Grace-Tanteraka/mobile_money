@@ -5,34 +5,54 @@ use CodeIgniter\Router\RouteCollection;
 /**
  * @var RouteCollection $routes
  */
+
+// ------------------------------------------------------------------
+// Routes publiques (authentification)
+// ------------------------------------------------------------------
 $routes->get('/', 'LoginController::showLogin');
 $routes->get('/login', 'LoginController::showLogin');
 $routes->post('/login', 'LoginController::loginAuth');
 $routes->get('/logout', 'LoginController::logout');
 
-$routes->group('/admin', function ($routes) { 
-    $routes->get('dashboard', 'AdminstrateurController::index');
+// ------------------------------------------------------------------
+// Espace Administrateur (backoffice) - protégé par le filtre de rôle
+// ------------------------------------------------------------------
+$routes->group('admin', ['filter' => 'role:admin'], function ($routes) {
+    $routes->get('dashboard', 'AdminController::index');
+    $routes->get('clients', 'AdminController::listeClient');
+    $routes->get('clients/transactions/(:num)', 'AdminController::voirTransactionsClient/$1');
 });
-//$routes->get('/admin/dashboard', 'AdminstrateurController::index');
-$routes->get('/client/dashboard', 'ClientController::index');
 
-// Basic auth routes
-$routes->get('/admin/clients', 'ClientController::listeClient');
-$routes->get('/admin/clients/transactions/(:num)', 'ClientController::voirTransactionsClient/$1');
+// ------------------------------------------------------------------
+// Espace Client (frontoffice) - protégé par le filtre de rôle
+// ------------------------------------------------------------------
+$routes->group('client', ['filter' => 'role:client'], function ($routes) {
+    $routes->get('dashboard', 'ClientController::index');
 
-$routes->get('/client/transaction', 'TransactionController::index');
-$routes->post('/client/processTransaction', 'TransactionController::processTransaction');
+    $routes->get('depot', 'ClientController::depot');
+    $routes->post('faire_depot', 'ClientController::faire_depot');
 
+    $routes->get('transfert', 'ClientController::transfert');
+    $routes->post('transferer', 'ClientController::processTransfert');
 
-$routes->get('/client/transactions', 'ClientController::voirTransactionsClientConnecte');
-$routes->get('/client/transactions/(:num)', 'ClientController::voirTransactionsClient/$1');
+    $routes->get('retrait', 'ClientController::retrait');
+    $routes->post('processRetrait', 'ClientController::processRetrait');
 
+    $routes->get('historique', 'ClientController::historique');
+
+    // Ancien formulaire unique (dépôt/retrait/transfert regroupés) : conservé tel quel.
+    $routes->get('transaction', 'TransactionController::index');
+    $routes->post('processTransaction', 'TransactionController::processTransaction');
+});
+
+// ------------------------------------------------------------------
+// Outils divers
+// ------------------------------------------------------------------
 $routes->get('/hash', 'HashController::hash');
 $routes->post('/hash', 'HashController::processHash');
 
 $routes->post('/frais', 'FraisController::calculFraisApi');
 
-$routes->get('/test', function() {
+$routes->get('/test', function () {
     return 'Test route works!';
 });
-
