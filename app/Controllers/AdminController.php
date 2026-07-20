@@ -6,7 +6,6 @@ use App\Models\TransactionsModel;
 use App\Models\OperationModel;
 use App\Models\OperateurModel;
 use App\Models\ClientModel;
-
 class AdminController extends BaseController
 {
     protected $session;
@@ -120,4 +119,18 @@ class AdminController extends BaseController
             'transactions' => $transactions
         ]);
     }
+
+    public function situationGains()
+{
+    $transactionModel = $this->transactionsModel;
+    $data = [
+        'gainGlobal'     => $transactionModel->getGainTotalGlobal(),
+        'detailGains'    => $transactionModel->getGainsInclusionInterOp(),
+        'gainsOps'       => $transactionModel->getGainsParOperation(),
+        'gainsOperateurs' => $transactionModel->getGainsParOperateur(),
+        'reconciliation' => $transactionModel->getMontantsAEnvoyerParOperateur()
+    ];
+
+    return view('admin/situation_gains', $data);
+}
 }

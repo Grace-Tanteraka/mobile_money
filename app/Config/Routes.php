@@ -38,16 +38,17 @@ $routes->group('client', ['filter' => 'role:client'], function ($routes) {
     $routes->get('retrait', 'ClientController::retrait');
     $routes->post('processRetrait', 'ClientController::processRetrait');
 
+    $routes->get('processTransaction', 'TransactionController::processTransaction');
+    $routes->get('FaireTransaction', 'TransactionController::index');
     $routes->get('historique', 'ClientController::historique');
 
     // Ancien formulaire unique (dépôt/retrait/transfert regroupés) : conservé tel quel.
     $routes->get('transaction', 'TransactionController::index');
     $routes->post('processTransaction', 'TransactionController::processTransaction');
+
 });
 
-// ------------------------------------------------------------------
-// Outils divers
-// ------------------------------------------------------------------
+
 $routes->get('/hash', 'HashController::hash');
 $routes->post('/hash', 'HashController::processHash');
 
