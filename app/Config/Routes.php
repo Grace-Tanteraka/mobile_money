@@ -34,5 +34,18 @@ $routes->post('/rh/demandes/(:num)/approuver', 'RhController::approuver/$1');
 $routes->post('/rh/demandes/(:num)/refuser', 'RhController::refuser/$1');
 $routes->get('/rh/soldes', 'RhController::soldes');
 
+
+$routes->group('admin', ['filter' => 'role:admin'], function($routes) {
+    $routes->get('dashboard', 'AdminController::index');
+    $routes->get('users', 'AdminController::listUsers');
+    $routes->get('delete-user/(:num)', 'AdminController::delete/$1');
+});
+
+$routes->group('admin', ['filter' => 'role:admin'], function($routes) {
+    $routes->get('dashboard', 'AdminController::index');
+    $routes->get('users', 'AdminController::listUsers');
+    $routes->get('delete-user/(:num)', 'AdminController::delete/$1');
+});
+
 // Dashboards Admin
 $routes->get('/admin/dashboard', 'Home::admin');

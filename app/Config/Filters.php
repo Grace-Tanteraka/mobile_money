@@ -25,17 +25,20 @@ class Filters extends BaseFilters
      * or [filter_name => [classname1, classname2, ...]]
      */
     public array $aliases = [
-        'csrf'          => CSRF::class,
-        'toolbar'       => DebugToolbar::class,
-        'honeypot'      => Honeypot::class,
-        'invalidchars'  => InvalidChars::class,
+        'csrf' => CSRF::class,
+        'toolbar' => DebugToolbar::class,
+        'honeypot' => Honeypot::class,
+        'invalidchars' => InvalidChars::class,
         'secureheaders' => SecureHeaders::class,
-        'cors'          => Cors::class,
-        'auth'          => \App\Filters\AuthFilter::class,
-        'forcehttps'    => ForceHTTPS::class,
-        'pagecache'     => PageCache::class,
-        'performance'   => PerformanceMetrics::class,
+        'cors' => Cors::class,
+        'auth' => \App\Filters\AuthFilter::class,
+        'forcehttps' => ForceHTTPS::class,
+        'pagecache' => PageCache::class,
+        'performance' => PerformanceMetrics::class,
+        'role' => \App\Filters\CheckRoleFilter::class, // Ajout du filtre ici
     ];
+
+
 
     /**
      * List of special required filters.
@@ -110,7 +113,7 @@ class Filters extends BaseFilters
      * @var array<string, array<string, list<string>>>
      */
     public array $filters = [];
-    
+
     public function __construct()
     {
         // apply auth filter to protected URI patterns
