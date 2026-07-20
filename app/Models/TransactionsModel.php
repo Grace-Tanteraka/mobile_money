@@ -46,4 +46,65 @@ class TransactionsModel extends Model
     {
         return $this->insert($data) !== false;
     }
+
+    public function getGainTotalGlobal()
+    {
+        $builder = $this->builder();
+        $builder->select('SUM(frais + valeur_commision) AS total_gain');
+        $query = $builder->get()->getRowArray();
+        return (float) ($query['total_gain'] ?? 0);
+    }
+
+   
+    public function getGainsInclusionInterOp()
+    {
+        $db = \Config\Database::connect();
+        
+        $sql = "
+            SELECT 
+                SUM(frais) AS total_frais_standards,
+                SUM(valeur_commision) AS total_commissions_interop,
+                SUM(frais + valeur_commision) AS total_general
+            FROM transactions
+        ";
+
+        return $db->query($sql)->getRowArray();
+    }
+
+ 
+    public function getGainsParOperation()
+    {
+        return $this->select('operation.libelle AS operation, SUM(transactions.frais + transactions.valeur_commision) AS gain_total, COUNT(transactions.id) AS nb_transactions')
+                    ->join('operation', 'operation.id = transactions.operation_id')
+                    ->groupBy('operation.id')
+                    ->findAll();
+    }
+
+    public function getGainsParOperateur()
+    {
+        return $this->select('operateur.nom AS operateur, SUM(transactions.frais + transactions.valeur_commision) AS gain_total, COUNT(transactions.id) AS nb_transactions')
+                    ->join('client AS client_hote', 'client_hote.id = transactions.client_hote')
+                    ->join('operateur', 'operateur.id = client_hote.operateur_id')
+                    ->groupBy('operateur.id')
+                    ->findAll();
+    }
+    public function getMontantsAEnvoyerParOperateur()
+    {
+        $db = \Config\Database::connect();
+
+        $sql = "
+            SELECT 
+                op.nom AS operateur_destinataire,
+                COUNT(t.id) AS nb_transferts,
+                SUM(t.montant) AS total_brut_envoye,
+                SUM(t.valeur_commision) AS total_commissions_gagnees
+            FROM transactions t
+            JOIN client c ON t.client_cible = c.id
+            JOIN operateur op ON c.operateur_id = op.id
+            WHERE t.operation_id = 3 -- 3 = Transfert
+            GROUP BY op.id, op.nom
+        ";
+
+        return $db->query($sql)->getResultArray();
+    }
 }
