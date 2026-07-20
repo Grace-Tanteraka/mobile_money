@@ -13,6 +13,8 @@ INSERT INTO prefixe (code, operateur_id) VALUES
 INSERT INTO client (nom, prenom, telephone, operateur_id, mdp) VALUES
 ('Rakoto', 'Jean', '0341234567', 1, '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'), -- 1234
 ('Rabe', 'Marie', '0389876543', 1, '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'), -- 1234
+('Rabe', 'Marie', '0389876544', 1, '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'), -- 1234
+('Rabe', 'Marie', '0389876545', 1, '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'), -- 1234
 ('Andrianina', 'Hery', '0334567890', 2, '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'), -- 1234
 ('Rasoa', 'Lala', '0321234567', 3, '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'); -- 1234
 
@@ -77,3 +79,25 @@ INSERT INTO administrateur(nom, prenom, email, mdp) VALUES
 
 INSERT INTO administration(administrateur_id, operateur_id) VALUES
 (1, 1);
+
+INSERT INTO comission (Nom, operateur_source_id, operateur_cible_id, taux_pourcentage) 
+VALUES ('Yas -> Airtel', 1, 2, 8.00);
+
+INSERT INTO comission (Nom, operateur_source_id, operateur_cible_id, taux_pourcentage) 
+VALUES ('Airtel -> Yas', 2, 1, 8.00);
+
+
+-- Taux : Yas (1) <-> Orange (3) = 10%
+INSERT INTO comission (Nom, operateur_source_id, operateur_cible_id, taux_pourcentage) 
+VALUES ('Yas -> Orange', 1, 3, 10.00);
+
+INSERT INTO comission (Nom, operateur_source_id, operateur_cible_id, taux_pourcentage) 
+VALUES ('Orange -> Yas', 3, 1, 10.00);
+
+
+-- Taux : Airtel (2) <-> Orange (3) = 5%
+INSERT INTO comission (Nom, operateur_source_id, operateur_cible_id, taux_pourcentage) 
+VALUES ('Airtel -> Orange', 2, 3, 5.00);
+
+INSERT INTO comission (Nom, operateur_source_id, operateur_cible_id, taux_pourcentage) 
+VALUES ('Orange -> Airtel', 3, 2, 5.00);

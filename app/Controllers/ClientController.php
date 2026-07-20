@@ -6,6 +6,8 @@ use App\Models\ClientModel;
 use App\Models\TransactionsModel;
 use App\Models\OperationModel;
 use App\Models\FraisModel;
+use App\Models\PrefixeModel;
+use App\Models\ComissionModel;
 
 class ClientController extends BaseController
 {
@@ -14,6 +16,8 @@ class ClientController extends BaseController
     protected $transactionsModel;
     protected $operationModel;
     protected $fraisModel;
+    protected $prefixeModel;
+    protected $comissionModel;
 
     public function __construct()
     {
@@ -22,6 +26,8 @@ class ClientController extends BaseController
         $this->transactionsModel = new TransactionsModel();
         $this->operationModel = new OperationModel();
         $this->fraisModel = new FraisModel();
+        $this->prefixeModel = new PrefixeModel();
+        $this->comissionModel = new ComissionModel();
     }
 
     protected function checkAuth()
@@ -70,13 +76,13 @@ class ClientController extends BaseController
             return redirect()->back()->with('error', 'Le montant minimum est de 100.');
         }
 
-        $operationId = 1; 
-        
+        $operationId = 1;
+
         // Adaptation selon ta méthode du FraisModel (calculerFrais ou calculFrais)
-        $fraisData = method_exists($this->fraisModel, 'calculerFrais') 
+        $fraisData = method_exists($this->fraisModel, 'calculerFrais')
             ? $this->fraisModel->calculerFrais($operationId, $montant)
             : $this->fraisModel->calculFrais($operationId, $montant);
-            
+
         $frais = $fraisData['montant_frais'] ?? $fraisData['montant'] ?? 0;
 
         // Début de la transaction manuelle stricte
@@ -85,7 +91,7 @@ class ClientController extends BaseController
 
         try {
             $client = $this->clientModel->find($clientId);
-            
+
             // Créditer : solde + (montant - frais)
             $nouveauSolde = $client['solde'] + ($montant - $frais);
             $this->clientModel->update($clientId, ['solde' => $nouveauSolde]);
@@ -110,7 +116,7 @@ class ClientController extends BaseController
             $db->transRollback();
             return redirect()->back()->with('error', 'Erreur lors du dépôt : ' . $e->getMessage());
         }
-    }   
+    }
 
     // --- TRANSFERT ---
     public function transfert()
@@ -122,6 +128,185 @@ class ClientController extends BaseController
     }
 
     public function processTransfert()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck) {
+            return $authCheck;
+        }
+
+        $clientId    = $this->session->get('id');
+        $clientHote  = $this->clientModel->find($clientId);
+
+        if (!$clientHote) {
+            return redirect()->back()->with('error', 'Session invalide ou client introuvable.');
+        }
+
+        $montantEntre   = (float) $this->request->getPost('montant');
+        $typeEnvoi      = $this->request->getPost('type_envoi');
+        $inclureRetrait = $this->request->getPost('inclure_frais_retrait') === '1';
+
+        if ($montantEntre < 100) {
+            return redirect()->back()->with('error', 'Le montant minimum est de 100 Ar.');
+        }
+
+        $opHote = $this->prefixeModel->getOperateurParNumero($clientHote['telephone']);
+        $operationId = 3; // ID 3 = Transfert
+
+        // =========================================================================
+        // CAS 1 : ENVOI MULTIPLE (Même opérateur uniquement)
+        // =========================================================================
+        if ($typeEnvoi === 'multiple') {
+            $telephonesInput = $this->request->getPost('telephone'); // Ex: "0321111111, 0322222222"
+            $telephones      = array_filter(array_map('trim', explode(',', (string) $telephonesInput)));
+
+            if (count($telephones) < 2) {
+                return redirect()->back()->with('error', 'Veuillez saisir au moins 2 numéros pour un envoi multiple.');
+            }
+
+            $clientsCibles = [];
+            foreach ($telephones as $tel) {
+                if ($tel === $clientHote['telephone']) {
+                    return redirect()->back()->with('error', "Vous ne pouvez pas inclure votre propre numéro ($tel).");
+                }
+
+                $opCible = $this->prefixeModel->getOperateurParNumero($tel);
+                if (!$opCible || $opCible['id'] !== $opHote['id']) {
+                    return redirect()->back()->with('error', "L'envoi multiple est strictement réservé au même réseau (" . $opHote['nom'] . "). Le numéro $tel pose problème.");
+                }
+
+                $cible = $this->clientModel->where('telephone', $tel)->first();
+                if (!$cible) {
+                    return redirect()->back()->with('error', "Le numéro $tel n'existe pas.");
+                }
+
+                $clientsCibles[] = $cible;
+            }
+
+            // Division du montant
+            $nbCibles           = count($clientsCibles);
+            $montantParPersonne = $montantEntre / $nbCibles;
+
+            // Calcul des frais par destinataire
+            $fraisData        = $this->fraisModel->calculerFrais($operationId, $montantParPersonne);
+            $fraisParPersonne = $fraisData ? (float) ($fraisData['montant_frais'] ?? $fraisData['montant'] ?? 0) : 0.0;
+
+            $costUnitaire = $montantParPersonne + $fraisParPersonne;
+            $totalGeneral = $costUnitaire * $nbCibles;
+
+            if ($totalGeneral > (float) $clientHote['solde']) {
+                return redirect()->back()->with('error', 'Solde insuffisant pour ce transfert multiple. Total requis : ' . number_format($totalGeneral, 2, ',', ' ') . ' Ar');
+            }
+
+            // Transaction SQL
+            $this->clientModel->transStart();
+
+            foreach ($clientsCibles as $cible) {
+                // Insertion transaction
+                $this->transactionsModel->insert([
+                    'montant'          => $montantParPersonne,
+                    'frais'            => $fraisParPersonne,
+                    'valeur_commision' => 0.00,
+                    'date'             => date('Y-m-d H:i:s'),
+                    'operation_id'     => $operationId,
+                    'client_hote'      => $clientId,
+                    'client_cible'     => $cible['id']
+                ]);
+
+                // Débit Hôte
+                $this->clientModel->set('solde', 'solde - ' . $costUnitaire, false)->update($clientId);
+                // Crédit Cible
+                $this->clientModel->set('solde', 'solde + ' . $montantParPersonne, false)->update($cible['id']);
+            }
+
+            $this->clientModel->transComplete();
+
+            if ($this->clientModel->transStatus() === false) {
+                return redirect()->back()->with('error', 'L\'envoi multiple a échoué.');
+            }
+
+            return redirect()->to(base_url('client/dashboard'))->with('success', "Envoi multiple de " . number_format($montantEntre, 2, ',', ' ') . " Ar divisé vers $nbCibles personnes réussi !");
+        }
+
+        // =========================================================================
+        // CAS 2 : ENVOI UNIQUE
+        // =========================================================================
+        $telephone = $this->request->getPost('telephone');
+        $clientCible = $this->clientModel->where('telephone', $telephone)->first();
+
+        if (!$clientCible) {
+            return redirect()->back()->with('error', 'Numéro de téléphone introuvable.');
+        }
+
+        if ($clientCible['id'] == $clientId) {
+            return redirect()->back()->with('error', 'Vous ne pouvez pas effectuer un transfert vers vous-même.');
+        }
+
+        $opCible          = $this->prefixeModel->getOperateurParNumero($clientCible['telephone']);
+        $estMemeOperateur = ($opHote && $opCible && $opHote['id'] === $opCible['id']);
+
+        // 1. Frais de retrait inclus (Uniquement sur le MÊME réseau)
+        $fraisRetraitInclus = 0.00;
+        if ($inclureRetrait && $estMemeOperateur) {
+            $fraisRetraitData   = $this->fraisModel->calculerFrais(2, $montantEntre); // 2 = Retrait
+            $fraisRetraitInclus = $fraisRetraitData ? (float) ($fraisRetraitData['montant_frais'] ?? $fraisRetraitData['montant'] ?? 0) : 0.00;
+        }
+
+        $montantAEnvoyer = $montantEntre + $fraisRetraitInclus;
+
+        // 2. Frais de transfert standards
+        $fraisTransfertData = $this->fraisModel->calculerFrais($operationId, $montantAEnvoyer);
+        $frais              = $fraisTransfertData ? (float) ($fraisTransfertData['montant_frais'] ?? $fraisTransfertData['montant'] ?? 0) : 0.00;
+
+        // 3. Commission Inter-Opérateurs
+        $commissionValue = 0.00;
+        if (!$estMemeOperateur) {
+            $regleCom = $this->comissionModel->where('operateur_source_id', $opHote['id'])
+                ->where('operateur_cible_id', $opCible['id'])
+                ->first();
+
+            $pourcentage     = $regleCom ? (float) $regleCom['taux_pourcentage'] : 5.00;
+            $commissionValue = ($montantAEnvoyer * $pourcentage) / 100;
+        }
+
+        // Total prélevé sur l'expéditeur
+        $totalADebiter = $montantAEnvoyer + $frais + $commissionValue;
+
+        if ($totalADebiter > (float) $clientHote['solde']) {
+            return redirect()->back()->with('error', 'Solde insuffisant. Requis avec frais et commission : ' . number_format($totalADebiter, 2, ',', ' ') . ' Ar');
+        }
+
+        // Transaction SQL
+        $this->clientModel->transStart();
+
+        try {
+            // Enregistrement de la transaction avec la commission
+            $transactionData = [
+                'montant'          => $montantAEnvoyer,
+                'frais'            => $frais,
+                'valeur_commision' => $commissionValue,
+                'date'             => date('Y-m-d H:i:s'),
+                'operation_id'     => $operationId,
+                'client_hote'      => $clientId,
+                'client_cible'     => $clientCible['id']
+            ];
+            $this->transactionsModel->insert($transactionData);
+
+            // Débit expéditeur (Montant envoyé + Frais transfert + Commission)
+            $this->clientModel->set('solde', 'solde - ' . $totalADebiter, false)->update($clientId);
+
+            // Crédit destinataire (Montant brut + Frais de retrait s'ils étaient inclus)
+            $this->clientModel->set('solde', 'solde + ' . $montantAEnvoyer, false)->update($clientCible['id']);
+
+            $this->clientModel->transComplete();
+
+            return redirect()->to(base_url('client/dashboard'))->with('success', 'Transfert effectué avec succès.');
+        } catch (\Exception $e) {
+            $this->clientModel->transRollback();
+            return redirect()->back()->with('error', 'Erreur lors du transfert : ' . $e->getMessage());
+        }
+    }
+
+    /* public function processTransfert()
     {
         $authCheck = $this->checkAuth();
         if ($authCheck) return $authCheck;
@@ -149,18 +334,36 @@ class ClientController extends BaseController
         }
 
         $clientHote = $this->clientModel->find($clientId);
-        
+
         $operationId = 3; // ID Transfert
-        $fraisData = method_exists($this->fraisModel, 'calculerFrais') 
+        $fraisData = method_exists($this->fraisModel, 'calculerFrais')
             ? $this->fraisModel->calculerFrais($operationId, $montant)
             : $this->fraisModel->calculFrais($operationId, $montant);
-            
+
         $frais = $fraisData['montant_frais'] ?? $fraisData['montant'] ?? 0;
 
         // Validation du solde
         if ($clientHote['solde'] < $montant) {
             return redirect()->back()->with('error', 'Solde insuffisant.');
         }
+
+        $commissionValue = 0.00;
+        if (!$estMemeOperateur) {
+            $regleCom = $this->comissionModel->where('operateur_source_id', $opHote['id'])
+                ->where('operateur_cible_id', $opCible['id'])
+                ->first();
+
+            $pourcentage     = $regleCom ? (float) $regleCom['taux_pourcentage'] : 5.00;
+            $commissionValue = ($montantAEnvoyer * $pourcentage) / 100;
+        }
+
+        // Total prélevé sur l'expéditeur
+        $totalADebiter = $montantAEnvoyer + $frais + $commissionValue;
+
+        if ($totalADebiter > (float) $clientHote['solde']) {
+            return redirect()->back()->with('error', 'Solde insuffisant. Requis avec frais et commission : ' . number_format($totalADebiter, 2, ',', ' ') . ' Ar');
+        }
+
 
         $db = \Config\Database::connect();
         $db->transBegin();
@@ -194,7 +397,7 @@ class ClientController extends BaseController
             $db->transRollback();
             return redirect()->back()->with('error', 'Erreur lors du transfert : ' . $e->getMessage());
         }
-    }
+    } */
 
     // --- RETRAIT ---
     public function retrait()
@@ -220,10 +423,10 @@ class ClientController extends BaseController
         $client = $this->clientModel->find($clientId);
         $operationId = 2; // ID Retrait
 
-        $fraisData = method_exists($this->fraisModel, 'calculerFrais') 
+        $fraisData = method_exists($this->fraisModel, 'calculerFrais')
             ? $this->fraisModel->calculerFrais($operationId, $montant)
             : $this->fraisModel->calculFrais($operationId, $montant);
-            
+
         $frais = $fraisData['montant_frais'] ?? $fraisData['montant'] ?? 0;
 
         // Tester le solde (Montant + Frais dus pour le retrait)
@@ -276,8 +479,8 @@ class ClientController extends BaseController
             ->join('client as c1', 'transactions.client_hote = c1.id')
             ->join('client as c2', 'transactions.client_cible = c2.id', 'left')
             ->groupStart()
-                ->where('transactions.client_hote', $clientId)
-                ->orWhere('transactions.client_cible', $clientId)
+            ->where('transactions.client_hote', $clientId)
+            ->orWhere('transactions.client_cible', $clientId)
             ->groupEnd()
             ->orderBy('transactions.date', 'DESC')
             ->findAll();

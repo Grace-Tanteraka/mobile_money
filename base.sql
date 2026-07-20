@@ -61,7 +61,18 @@ CREATE TABLE transactions (
     operation_id INTEGER,
     client_hote INTEGER,
     client_cible INTEGER,
+    valeur_commision DECIMAL(20, 2) NOT NULL DEFAULT 0.00,
     FOREIGN KEY (client_hote) REFERENCES client(id),
     FOREIGN KEY (client_cible) REFERENCES client(id),
     FOREIGN KEY (operation_id) REFERENCES operation(id)
+);
+
+CREATE TABLE comission (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    Nom VARCHAR(50) NOT NULL, -- Ex: 'Telma -> Orange'
+    operateur_source_id INTEGER NOT NULL,
+    operateur_cible_id INTEGER NOT NULL,
+    taux_pourcentage DECIMAL(5, 2) NOT NULL, -- Ex: 10.00 (pour 10%)
+    FOREIGN KEY (operateur_source_id) REFERENCES operateur(id),
+    FOREIGN KEY (operateur_cible_id) REFERENCES operateur(id)
 );
