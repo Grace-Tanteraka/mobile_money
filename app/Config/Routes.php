@@ -9,14 +9,13 @@ use CodeIgniter\Router\RouteCollection;
 $routes->get('/admin/clients', 'ClientController::listeClient');
 $routes->get('/admin/clients/transactions/(:num)', 'ClientController::voirTransactionsClient/$1');
 
-$routes->get('/client/retrait', 'ClientController::retrait');
-$routes->post('/client/retrait', 'ClientController::processRetrait');
+$routes->get('/client/transaction', 'TransactionController::index');
+$routes->post('/client/processTransaction', 'TransactionController::processTransaction');
 
-$routes->get('/client/transfert', 'ClientController::transfert');
-$routes->post('/client/transfert', 'ClientController::processTransfert');
-
-$routes->get('/client/transactions', 'ClientController::voirTransactionsClientConnecte');
-$routes->get('/client/transactions/(:num)', 'ClientController::voirTransactionsClient/$1');
+$routes->get('/client/transactions', 'TransactionController::voirTransactionsClientConnecte');
+$routes->get('/client/transactions/(:num)', 'TransactionController::voirTransactionsClient/$1');
 
 $routes->get('/hash', 'HashController::hash');
 $routes->post('/hash', 'HashController::processHash');
+
+$routes->post('/frais', 'FraisController::calculFraisApi');

@@ -11,10 +11,11 @@ class FraisModel extends Model
     protected $returnType = 'array';
     protected $useAutoIncrement = true;
 
-    public function calculFrais(int $operation_id, float $montant){
+    public function calculerFrais($operation_id, $montant)
+    {
         return $this->where('operation_id', $operation_id)
-                ->andWhere('montant_inf >=', $montant)
-                ->andWhere('montant_sup <=', $montant)
+            ->where('montant_inf <=', $montant) // montant est supérieur ou égal au minimum
+            ->where('montant_sup >=', $montant) // montant est inférieur ou égal au maximum
             ->first();
     }
 }

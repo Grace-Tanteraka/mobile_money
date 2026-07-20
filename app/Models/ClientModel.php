@@ -40,4 +40,9 @@ class ClientModel extends Model
             ->findAll();
     }
 
+    public function findByTelephone(string $telephone): ?array
+    {
+        return $this->where('telephone', $telephone)->first();
+    }
+
 }
