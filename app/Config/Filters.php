@@ -77,7 +77,7 @@ class Filters extends BaseFilters
     public array $globals = [
         'before' => [
             // 'honeypot',
-            'csrf', // Active la protection contre la falsification de requête intersite 
+            //'csrf', // Active la protection contre la falsification de requête intersite 
             // 'invalidchars',
         ],
         'after' => [
@@ -117,6 +117,5 @@ class Filters extends BaseFilters
     public function __construct()
     {
         // apply auth filter to protected URI patterns
-    
     }
 }

@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Controllers;
+use App\Models\ClientModel;
 
 class ClientController extends BaseController
 {
@@ -13,7 +14,6 @@ class ClientController extends BaseController
 
     protected function checkAuth()
     {
-        // Corrigé : 'isLoggedIn' au lieu de 'is_logged_in'
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'client') {
             return redirect()->to(base_url('login'))->with('error', 'Vous devez être connecté en tant que client.');
         }
@@ -25,12 +25,25 @@ class ClientController extends BaseController
     {
         $authCheck = $this->checkAuth();
         if ($authCheck) {
-            return $authCheck; 
+            return $authCheck;
         }
 
         $clientName = $this->session->get('name');
 
-        // Assure-toi que le dossier dans app/Views s'appelle 'client' (en minuscules)
         return view('client/dashboard', ['clientName' => $clientName]);
+    }
+
+    public function listeClient()
+    {
+        $clientModel = new ClientModel();
+        $clients = $clientModel->findAllClientWithOperatorForOneAdministrateur(1);
+        return view('Administrateur/client/liste_client', ['clients' => $clients]);
+    }
+
+    public function voirTransactionsClient($clientId)
+    {
+        $transactionsModel = new \App\Models\TransactionsModel();
+        $transactions = $transactionsModel->findByClientIdWithOperation($clientId);
+        return view('Administrateur/client/transactions_client', ['transactions' => $transactions]);
     }
 }

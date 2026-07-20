@@ -2,8 +2,14 @@
 
 CREATE TABLE operateur (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    nom VARCHAR(50) NOT NULL,
-    prefixe VARCHAR(6) NOT NULL UNIQUE
+    nom VARCHAR(50) NOT NULL
+);
+
+CREATE TABLE prefixe (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    code VARCHAR(6) NOT NULL UNIQUE,
+    operateur_id INTEGER,
+    FOREIGN KEY (operateur_id) REFERENCES operateur(id)
 );
 
 CREATE TABLE administrateur (
@@ -34,12 +40,15 @@ CREATE TABLE client (
     operateur_id INTEGER,
     telephone VARCHAR(15) NOT NULL UNIQUE,
     solde DECIMAL(20, 2) NOT NULL DEFAULT 0.00,
+    mdp VARCHAR(255) NOT NULL,
     FOREIGN KEY (operateur_id) REFERENCES operateur(id)
 );
 
 CREATE TABLE frais (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    montant DECIMAL(20, 2) NOT NULL,
+    montant_inf DECIMAL(20, 2) NOT NULL,
+    montant_sup DECIMAL(20, 2) NOT NULL,
+    montant_frais DECIMAL(20, 2) NOT NULL,
     operation_id INTEGER,
     FOREIGN KEY (operation_id) REFERENCES operation(id)
 );
