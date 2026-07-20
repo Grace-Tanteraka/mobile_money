@@ -13,3 +13,18 @@
 | - faire transfert (meme que retrait)                                              | - faire depot
 |                                                                                   | - voir historique
 | design (backoffice)                                                               | design (frontoffice)
+
+
+## Taches pour la version 2
+| Tanteraka                                                                         | Steeven
+|:----------------------------------------------------------------------------------|:---------------------------------------------------------------------------------
+| transfert avance (frontoffice) :                                                  | situation gains avancee (backoffice) :
+| - transfert multiple (envoi a plusieurs destinataires)                            | - calcul des commissions inter-operateurs
+| - gestion de l'option inclure frais de retrait                                    | - suivi du gain global et des frais d'inclusion
+| - verification de solde globale (montants + frais)                                | - repartition des gains par type d'operation
+|                                                                                   | - repartition des gains par operateur
+| validation & securite (frontoffice) :                                             | dashboard admin & visualisation (backoffice) :
+| - validation dynamiques des numeros selon l'operateur (032, 033, 034, 037, 038)   | - integration des graphiques Chart.js (Doughnut / Bar)
+| - contraintes de formatage et decoupage des destinataires (mode unique/multiple)  | - calcul des montants a reconcilier / envoyer par operateur
+|                                                                                   | - route dediee admin/situation-gains et vues associees
+| optimisation design & UX (frontoffice)                                            | optimisation design & UX (backoffice)
