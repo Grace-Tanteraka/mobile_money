@@ -1,13 +1,13 @@
-CREATE DATABASE mobile_money;
+-- CREATE DATABASE mobile_money;
 
 CREATE TABLE operateur (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     nom VARCHAR(50) NOT NULL,
     prefixe VARCHAR(6) NOT NULL UNIQUE
 );
 
 CREATE TABLE administrateur (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     nom VARCHAR(50) NOT NULL,
     prenom VARCHAR(50) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
@@ -15,44 +15,46 @@ CREATE TABLE administrateur (
 );
 
 CREATE TABLE administration (
-    id INT PRIMARY KEY AUTO_INCREMENT,
-    administrateur_id INT,
-    operateur_id INT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    administrateur_id INTEGER,
+    operateur_id INTEGER,
     FOREIGN KEY (administrateur_id) REFERENCES administrateur(id),
     FOREIGN KEY (operateur_id) REFERENCES operateur(id)
 );
 
 CREATE TABLE operation (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     libelle VARCHAR(50) NOT NULL
 );
 
 CREATE TABLE client (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     nom VARCHAR(50) NOT NULL,
     prenom VARCHAR(50) NOT NULL,
-    operateur_id INT,
+    operateur_id INTEGER,
     telephone VARCHAR(15) NOT NULL UNIQUE,
     solde DECIMAL(20, 2) NOT NULL DEFAULT 0.00,
     FOREIGN KEY (operateur_id) REFERENCES operateur(id)
 );
 
 CREATE TABLE frais (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     montant DECIMAL(20, 2) NOT NULL,
-    operation_id INT,
+    operation_id INTEGER,
     FOREIGN KEY (operation_id) REFERENCES operation(id)
 );
 
-CREATE TABLE transaction (
-    id INT PRIMARY KEY AUTO_INCREMENT,
+CREATE TABLE transactions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
     montant DECIMAL(20, 2) NOT NULL,
     frais DECIMAL(20, 2) NOT NULL,
     date DATETIME NOT NULL,
-    operation_id INT,
-    client_hote INT,
-    client_cible INT,
+    operation_id INTEGER,
+    client_hote INTEGER,
+    client_cible INTEGER,
     FOREIGN KEY (client_hote) REFERENCES client(id),
     FOREIGN KEY (client_cible) REFERENCES client(id),
     FOREIGN KEY (operation_id) REFERENCES operation(id)
 );
+
+-- Datas
