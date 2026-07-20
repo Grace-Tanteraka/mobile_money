@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use CodeIgniter\Model;
+use App\Models\AdministrationModel;
 
 class ClientModel extends Model
 {
@@ -26,6 +27,17 @@ class ClientModel extends Model
             return $rh;
         }
         return null;
+    }
+
+    public function findAllClientWithOperatorForOneAdministrateur(int $administrateurId): array
+    {
+        $administrationModel = new AdministrationModel();
+        $operateurs = $administrationModel->findOperateurAdministratedByAdministrateurId($administrateurId);
+        $operateurIds = array_column($operateurs, 'operateur_id');
+        return $this->select('client.*, operateur.nom as operateur_nom')
+            ->join('operateur', 'client.operateur_id = operateur.id')
+            ->whereIn('client.operateur_id', $operateurIds)
+            ->findAll();
     }
 
 }
