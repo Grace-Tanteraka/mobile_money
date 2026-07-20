@@ -58,3 +58,8 @@ CREATE TABLE transactions (
 );
 
 -- Datas
+/* Donnee de test */
+INSERT INTO operateur (nom, prefixe) VALUES ('Orange', '032'), ('Yas', '038');
+/*mdp : 123*/
+INSERT INTO administrateur (nom, prenom, email, mdp) VALUES ('Admin', 'Super', 'admin@gmail.com', '$2y$10$Q7sZoxFxdfTL9gdLYgOn4O8zs6YUILjiINCEHy3A0nNUXlZ/jg9Nq');
+INSERT INTO client (nom, prenom, operateur_id, telephone) VALUES ('Client', 'Test', 1, '0321234567');
