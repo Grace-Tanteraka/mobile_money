@@ -85,9 +85,12 @@ class AdminController extends BaseController
         $clients = $this->clientModel
             ->select('client.*, operateur.nom as operateur_nom')
             ->join('operateur', 'client.operateur_id = operateur.id')
-            ->findAll();
+            ->paginate(10);
 
-        return view('admin/liste_client', ['clients' => $clients]);
+        return view('admin/liste_client', [
+            'clients' => $clients,
+            'pager' => $this->clientModel->pager,
+        ]);
     }
 
     public function voirTransactionsClient($clientId)

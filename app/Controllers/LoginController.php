@@ -53,7 +53,7 @@ class LoginController extends BaseController
             return redirect()->to(site_url('login'))->with('error', 'Email ou mot de passe Administrateur incorrect.');
         }
 
-        // 2. TENTATIVE DE CONNEXION CLIENT
+        // 2. TENTATIVE DE CONNEXION CLIENT (par numéro uniquement, sans mot de passe)
         if ($role === 'client') {
             if (empty($numero)) {
                 return redirect()->to(site_url('login'))->with('error', 'Veuillez saisir votre numéro de téléphone.');
@@ -65,6 +65,8 @@ class LoginController extends BaseController
                 $sessionData = [
                     'id'         => $client['id'],
                     'name'       => $client['prenom'] . ' ' . $client['nom'],
+                    'nom'        => $client['nom'],
+                    'prenom'     => $client['prenom'],
                     'numero'     => $client['telephone'],
                     'role'       => 'client',
                     'isLoggedIn' => true,

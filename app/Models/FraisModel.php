@@ -18,4 +18,9 @@ class FraisModel extends Model
             ->where('montant_sup >=', $montant) // montant est inférieur ou égal au maximum
             ->first();
     }
+
+    public function calculFrais($operation_id, $montant)
+    {
+        return $this->calculerFrais($operation_id, $montant);
+    }
 }

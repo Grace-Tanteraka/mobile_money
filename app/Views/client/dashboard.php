@@ -68,7 +68,7 @@
                             </div>
                             <div>
                                 <small class="text-muted fw-semibold">Solde Disponible</small>
-                                <h3 class="mb-0 fw-bold">250 000 Ar</h3>
+                                <h3 class="mb-0 fw-bold"><?= number_format($client['solde'], 0, ',', ' ') ?> Ar</h3>
                             </div>
                         </div>
                     </div>
