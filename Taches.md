@@ -10,6 +10,6 @@
 | - seeder transaction, frais, operation                                            | - Situation gain via les différents frais (dashboard : chart js)
 | cotee client : (frontoffice)                                                      | cotee client : (frontoffice)
 | - faire retrait (transaction + solde + calcul frais + verification solde)         | - login + filter + validation
-| - faire transfer (meme que retrait)                                               | - faire depot
+| - faire transfert (meme que retrait)                                              | - faire depot
 |                                                                                   | - voir historique
 | design (backoffice)                                                               | design (frontoffice)

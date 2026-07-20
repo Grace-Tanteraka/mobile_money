@@ -40,6 +40,7 @@ CREATE TABLE client (
     operateur_id INTEGER,
     telephone VARCHAR(15) NOT NULL UNIQUE,
     solde DECIMAL(20, 2) NOT NULL DEFAULT 0.00,
+    mdp VARCHAR(255) NOT NULL,
     FOREIGN KEY (operateur_id) REFERENCES operateur(id)
 );
 

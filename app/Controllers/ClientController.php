@@ -8,7 +8,7 @@ class ClientController extends BaseController
     public function listeClient()
     {
         $clientModel = new ClientModel();
-        $clients = $clientModel->findAllClientWithOperator();
+        $clients = $clientModel->findAllClientWithOperatorForOneAdministrateur(1);
         return view('Administrateur/client/liste_client', ['clients' => $clients]);
     }
 

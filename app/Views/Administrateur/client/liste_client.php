@@ -13,7 +13,6 @@
                     <th>ID</th>
                     <th>Nom</th>
                     <th>Prénom</th>
-                    <th>Email</th>
                     <th>Numéro de téléphone</th>
                     <th>Opérateur</th>
                 </tr>
@@ -24,8 +23,7 @@
                         <td><?= esc($client['id']) ?></td>
                         <td><?= esc($client['nom']) ?></td>
                         <td><?= esc($client['prenom']) ?></td>
-                        <td><?= esc($client['email']) ?></td>
-                        <td><?= esc($client['numero_telephone']) ?></td>
+                        <td><?= esc($client['telephone']) ?></td>
                         <td><?= esc($client['operateur_nom']) ?></td>
                     </tr>
                 <?php endforeach; ?>

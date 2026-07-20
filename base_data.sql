@@ -10,11 +10,11 @@ INSERT INTO prefixe (code, operateur_id) VALUES
 ('032', 3),
 ('037', 3);
 
-INSERT INTO client (nom, prenom, telephone, operateur_id) VALUES
-('Rakoto', 'Jean', '0341234567', 1),
-('Rabe', 'Marie', '0389876543', 1),
-('Andrianina', 'Hery', '0334567890', 2),
-('Rasoa', 'Lala', '0321234567', 3);
+INSERT INTO client (nom, prenom, telephone, operateur_id, mdp) VALUES
+('Rakoto', 'Jean', '0341234567', 1, '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'), -- 1234
+('Rabe', 'Marie', '0389876543', 1, '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'), -- 1234
+('Andrianina', 'Hery', '0334567890', 2, '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'), -- 1234
+('Rasoa', 'Lala', '0321234567', 3, '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'); -- 1234
 
 INSERT INTO operation (libelle) VALUES
 ('Depot'),
@@ -71,3 +71,9 @@ INSERT INTO transactions (montant, frais, date, operation_id, client_hote, clien
 (100000, 100, '2023-10-10 14:30:00', 3, 2, 3),
 (150000, 200, '2023-10-11 09:15:00', 3, 3, 4),
 (200000, 400, '2023-10-12 16:45:00', 3, 4, 1);
+
+INSERT INTO administrateur(nom, prenom, email, mdp) VALUES
+('admin', 'admin', 'admin@gmail.com', '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'); -- admin123
+
+INSERT INTO administration(administrateur_id, operateur_id) VALUES
+(1, 1);
