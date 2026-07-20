@@ -12,29 +12,36 @@ class CheckRoleFilter implements FilterInterface
     {
         // 1. Vérification de la connexion
         if (!session()->get('isLoggedIn')) {
-            return redirect()->to('/login');
+            return redirect()->to('/login')->with('error', 'Veuillez vous connecter.');
         }
 
-        // 2. Si aucun rôle n'est spécifié dans la route, on laisse passer
+        // 2. Si aucun rôle n'est spécifié dans les arguments de la route, on laisse passer
         if (empty($arguments)) {
             return;
         }
 
-        // 3. Récupération du rôle requis (argument passé depuis la route)
-        $roleRequis = $arguments[0];
+        // 3. Récupération du rôle utilisateur
+        $roleUtilisateur = session()->get('role');
 
-        // 4. Récupération du rôle de l'utilisateur (stocké en session)
-        $roleUtilisateur = session()->get('role'); // ex: 'admin', 'user'
+        // 4. Vérification : si le rôle de l'utilisateur n'est pas dans la liste des rôles autorisés ($arguments)
+        if (!in_array($roleUtilisateur, $arguments)) {
+            
+            // Redirection intelligente selon le rôle de l'utilisateur pour éviter les boucles
+            if ($roleUtilisateur === 'admin') {
+                return redirect()->to('/admin/dashboard')->with('error', 'Accès non autorisé.');
+            } 
+            
+            if ($roleUtilisateur === 'client') {
+                return redirect()->to('/client/dashboard')->with('error', 'Accès non autorisé.');
+            }
 
-        // 5. Blocage si le rôle ne correspond pas
-        if ($roleUtilisateur !== $roleRequis) {
-            // Redirection avec un message d'erreur (ou vers une erreur 403)
-            return redirect()->to('/dashboard')->with('error', 'Accès interdit !');
+            // Si le rôle est inconnu, retour au login
+            return redirect()->to('/login')->with('error', 'Accès refusé.');
         }
     }
 
     public function after(RequestInterface $request, ResponseInterface $response, $arguments = null)
     {
-        // Laisser vide pour ce cas d'usage
+        // Rien à faire après l'exécution de la requête
     }
 }

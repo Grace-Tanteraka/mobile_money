@@ -424,6 +424,5 @@ $errorId = uniqid('error', true);
 
     </div> <!-- /container -->
     <?php endif; ?>
-
 </body>
 </html>
