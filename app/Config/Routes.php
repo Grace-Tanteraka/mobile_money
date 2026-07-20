@@ -23,6 +23,9 @@ $routes->post('/client/processTransaction', 'TransactionController::processTrans
 $routes->get('/client/transactions', 'ClientController::voirTransactionsClientConnecte');
 $routes->get('/client/transactions/(:num)', 'ClientController::voirTransactionsClient/$1');
 
+$routes->get('/client/processTransaction', 'TransactionController::processTransaction');
+$routes->get('/client/FaireTransaction', 'TransactionController::index');
+
 $routes->get('/hash', 'HashController::hash');
 $routes->post('/hash', 'HashController::processHash');
 
