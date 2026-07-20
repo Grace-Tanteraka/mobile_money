@@ -12,7 +12,7 @@ $routes->get('/logout', 'LoginController::logout');
 $routes->get('/admin/dashboard', 'AdminstrateurController::index');
 $routes->get('/client/dashboard', 'ClientController::index');
 
-// Basic auth routes for TechMada RH
+// Basic auth routes
 $routes->get('/admin/clients', 'ClientController::listeClient');
 $routes->get('/admin/clients/transactions/(:num)', 'ClientController::voirTransactionsClient/$1');
 
@@ -21,6 +21,9 @@ $routes->post('/client/retrait', 'ClientController::processRetrait');
 
 $routes->get('/client/transfert', 'ClientController::transfert');
 $routes->post('/client/transfert', 'ClientController::processTransfert');
+
+$routes->get('/client/depot', 'ClientController::depot');
+$routes->get('/client/faire_depot', 'ClientController::faire_depot');
 
 $routes->get('/client/transactions', 'ClientController::voirTransactionsClientConnecte');
 $routes->get('/client/transactions/(:num)', 'ClientController::voirTransactionsClient/$1');

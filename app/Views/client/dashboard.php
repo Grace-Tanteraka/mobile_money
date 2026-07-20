@@ -26,16 +26,19 @@
             <h4 class="text-white mb-4 ps-2"><i class="fa-solid fa-wallet text-info me-2"></i>Mon Espace</h4>
             <ul class="nav nav-pills flex-column mb-auto">
                 <li class="nav-item">
-                    <a href="#" class="nav-link active"><i class="fa-solid fa-chart-line me-2"></i>Tableau de bord</a>
+                    <a href="<?= base_url('client/dashboard') ?>" class="nav-link"><i class="fa-solid fa-chart-line me-2"></i>Tableau de bord</a>
                 </li>
                 <li>
-                    <a href="#" class="nav-link"><i class="fa-solid fa-arrow-right-arrow-left me-2"></i>Transactions</a>
+                    <a href="<?= base_url('client/depot') ?>" class="nav-link active"><i class="fa-solid fa-plus-circle me-2"></i>Dépôt</a>
                 </li>
                 <li>
-                    <a href="#" class="nav-link"><i class="fa-solid fa-user me-2"></i>Mon Profil</a>
+                    <a href="<?= base_url('client/transfert') ?>" class="nav-link"><i class="fa-solid fa-arrow-right-arrow-left me-2"></i>Transfert</a>
                 </li>
                 <li>
-                    <a href="#" class="nav-link"><i class="fa-solid fa-gear me-2"></i>Paramètres</a>
+                    <a href="<?= base_url('client/retrait') ?>" class="nav-link"><i class="fa-solid fa-minus-circle me-2"></i>Retrait</a>
+                </li>
+                <li>
+                    <a href="<?= base_url('client/historique') ?>" class="nav-link"><i class="fa-solid fa-history me-2"></i>Historique</a>
                 </li>
             </ul>
             <hr>
