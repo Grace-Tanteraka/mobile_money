@@ -18,7 +18,7 @@ $routes->get('/logout', 'LoginController::logout');
 // Espace Administrateur (backoffice) - protégé par le filtre de rôle
 // ------------------------------------------------------------------
 $routes->group('admin', ['filter' => 'role:admin'], function ($routes) {
-    $routes->get('dashboard', 'AdminController::index');
+    $routes->get('dashboard', 'AdminController::situationGains');
     $routes->get('clients', 'AdminController::listeClient');
     $routes->get('clients/transactions/(:num)', 'AdminController::voirTransactionsClient/$1');
 });

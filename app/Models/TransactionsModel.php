@@ -107,4 +107,5 @@ class TransactionsModel extends Model
 
         return $db->query($sql)->getResultArray();
     }
+    
 }

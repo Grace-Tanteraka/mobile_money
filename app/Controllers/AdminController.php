@@ -6,6 +6,8 @@ use App\Models\TransactionsModel;
 use App\Models\OperationModel;
 use App\Models\OperateurModel;
 use App\Models\ClientModel;
+use App\Models\AdminstrateurModel;
+
 class AdminController extends BaseController
 {
     protected $session;
@@ -13,6 +15,7 @@ class AdminController extends BaseController
     protected $operationModel;
     protected $operateurModel;
     protected $clientModel;
+    protected $administrateurModel;
 
     public function __construct()
     {
@@ -21,6 +24,7 @@ class AdminController extends BaseController
         $this->operationModel = new OperationModel();
         $this->operateurModel = new OperateurModel();
         $this->clientModel = new ClientModel();
+        $this->administrateurModel = new AdminstrateurModel();
     }
 
     protected function checkAuth()
@@ -106,8 +110,8 @@ class AdminController extends BaseController
             ->join('client as c1', 'transactions.client_hote = c1.id')
             ->join('client as c2', 'transactions.client_cible = c2.id', 'left')
             ->groupStart()
-                ->where('transactions.client_hote', $clientId)
-                ->orWhere('transactions.client_cible', $clientId)
+            ->where('transactions.client_hote', $clientId)
+            ->orWhere('transactions.client_cible', $clientId)
             ->groupEnd()
             ->orderBy('transactions.date', 'DESC')
             ->findAll();
@@ -121,16 +125,16 @@ class AdminController extends BaseController
     }
 
     public function situationGains()
-{
-    $transactionModel = $this->transactionsModel;
-    $data = [
-        'gainGlobal'     => $transactionModel->getGainTotalGlobal(),
-        'detailGains'    => $transactionModel->getGainsInclusionInterOp(),
-        'gainsOps'       => $transactionModel->getGainsParOperation(),
-        'gainsOperateurs' => $transactionModel->getGainsParOperateur(),
-        'reconciliation' => $transactionModel->getMontantsAEnvoyerParOperateur()
-    ];
+    {
+        $transactionsModel = $this->transactionsModel;
+        $data = [
+            'gainGlobal'     => $transactionsModel->getGainTotalGlobal(),
+            'detailGains'    => $transactionsModel->getGainsInclusionInterOp(),
+            'gainsOps'       => $transactionsModel->getGainsParOperation(),
+            'gainsOperateurs' => $transactionsModel->getGainsParOperateur(),
+            'reconciliation' => $transactionsModel->getMontantsAEnvoyerParOperateur()
+        ];
 
-    return view('admin/situation_gains', $data);
-}
+        return view('admin/dashboard', $data);
+    }
 }
