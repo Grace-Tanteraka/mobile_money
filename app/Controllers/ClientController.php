@@ -27,7 +27,7 @@ class ClientController extends BaseController
     protected function checkAuth()
     {
         if (!$this->session->get('isLoggedIn') || $this->session->get('role') !== 'client') {
-            return redirect()->to(base_url('login'))->with('error', 'Vous devez être connecté en tant que client.');
+            return redirect()->to(site_url('login'))->with('error', 'Vous devez être connecté en tant que client.');
         }
         return null;
     }
@@ -35,9 +35,7 @@ class ClientController extends BaseController
     public function index()
     {
         $authCheck = $this->checkAuth();
-        if ($authCheck) {
-            return $authCheck;
-        }
+        if ($authCheck) return $authCheck;
 
         $clientId = $this->session->get('id');
         $client = $this->clientModel->find($clientId);
@@ -51,83 +49,222 @@ class ClientController extends BaseController
         return view('client/dashboard', $data);
     }
 
+    // --- DÉPÔT ---
     public function depot()
     {
         $authCheck = $this->checkAuth();
-        if ($authCheck) {
-            return $authCheck;
-        }
+        if ($authCheck) return $authCheck;
 
-        $clientId = $this->session->get('id');
-        $client = $this->clientModel->find($clientId);
-
-        return view('client/depot', ['client' => $client]);
+        return view('client/depot');
     }
 
     public function faire_depot()
     {
         $authCheck = $this->checkAuth();
-        if ($authCheck) {
-            return $authCheck;
-        }
+        if ($authCheck) return $authCheck;
 
-        $montant = $this->request->getPost('montant');
+        $montant = (float) $this->request->getPost('montant');
         $clientId = $this->session->get('id');
 
-        // Validation
-        if ($montant <= 0) {
-            return redirect()->back()->with('error', 'Le montant doit être positif.');
+        if ($montant < 100) {
+            return redirect()->back()->with('error', 'Le montant minimum est de 100.');
         }
 
-        // Récupérer l'opération de dépôt (id=1 par exemple)
-        $operationId = 1; // À adapter selon votre base
-        $operation = $this->operationModel->find($operationId);
+        $operationId = 1; 
+        
+        // Adaptation selon ta méthode du FraisModel (calculerFrais ou calculFrais)
+        $fraisData = method_exists($this->fraisModel, 'calculerFrais') 
+            ? $this->fraisModel->calculerFrais($operationId, $montant)
+            : $this->fraisModel->calculFrais($operationId, $montant);
+            
+        $frais = $fraisData['montant_frais'] ?? $fraisData['montant'] ?? 0;
 
-        if (!$operation) {
-            return redirect()->back()->with('error', 'Opération de dépôt non trouvée.');
-        }
-
-        // Calculer les frais
-        $fraisData = $this->fraisModel->calculFrais($operationId, $montant);
-        $frais = $fraisData['montant'] ?? 0;
-
-        // Démarrer la transaction SQL
-        $this->clientModel->transStart();
+        // Début de la transaction manuelle stricte
+        $db = \Config\Database::connect();
+        $db->transBegin();
 
         try {
-            // Mise à jour du solde client
             $client = $this->clientModel->find($clientId);
-            $nouveauSolde = $client['solde'] + $montant;
+            
+            // Créditer : solde + (montant - frais)
+            $nouveauSolde = $client['solde'] + ($montant - $frais);
             $this->clientModel->update($clientId, ['solde' => $nouveauSolde]);
 
-            // Insertion de la transaction
             $transactionData = [
-                'montant' => $montant,
-                'frais' => $frais,
-                'date' => date('Y-m-d H:i:s'),
+                'montant'      => $montant,
+                'frais'        => $frais,
+                'date'         => date('Y-m-d H:i:s'),
                 'operation_id' => $operationId,
-                'client_hote' => $clientId,
+                'client_hote'  => $clientId,
                 'client_cible' => null
             ];
             $this->transactionsModel->insert($transactionData);
 
-            // Valider la transaction
-            $this->clientModel->transComplete();
+            if ($db->transStatus() === false) {
+                throw new \Exception("Échec de l'insertion SQL de la transaction.");
+            }
 
-            return redirect()->to(base_url('client/dashboard'))->with('success', 'Dépôt effectué avec succès.');
+            $db->transCommit();
+            return redirect()->to(site_url('client/dashboard'))->with('success', 'Dépôt effectué avec succès.');
         } catch (\Exception $e) {
-            // Annuler la transaction en cas d'erreur
-            $this->clientModel->transRollback();
+            $db->transRollback();
             return redirect()->back()->with('error', 'Erreur lors du dépôt : ' . $e->getMessage());
+        }
+    }   
+
+    // --- TRANSFERT ---
+    public function transfert()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck) return $authCheck;
+
+        return view('client/transfert');
+    }
+
+    public function processTransfert()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck) return $authCheck;
+
+        // Récupère soit 'client_cible_num' soit 'telephone' selon ton formulaire
+        $telephone = $this->request->getPost('client_cible_num') ?? $this->request->getPost('telephone');
+        $montant = (float) $this->request->getPost('montant');
+        $clientId = $this->session->get('id');
+
+        if ($montant < 100) {
+            return redirect()->back()->with('error', 'Le montant minimum est de 100.');
+        }
+
+        // Si findByTelephone existe sur ton modèle, on l'utilise, sinon requete classique
+        $clientCible = method_exists($this->clientModel, 'findByTelephone')
+            ? $this->clientModel->findByTelephone($telephone)
+            : $this->clientModel->where('telephone', $telephone)->first();
+
+        if (!$clientCible) {
+            return redirect()->back()->with('error', 'Numéro de téléphone introuvable.');
+        }
+
+        if ($clientCible['id'] == $clientId) {
+            return redirect()->back()->with('error', 'Vous ne pouvez pas effectuer un transfert à vous-même.');
+        }
+
+        $clientHote = $this->clientModel->find($clientId);
+        
+        $operationId = 3; // ID Transfert
+        $fraisData = method_exists($this->fraisModel, 'calculerFrais') 
+            ? $this->fraisModel->calculerFrais($operationId, $montant)
+            : $this->fraisModel->calculFrais($operationId, $montant);
+            
+        $frais = $fraisData['montant_frais'] ?? $fraisData['montant'] ?? 0;
+
+        // Validation du solde
+        if ($clientHote['solde'] < $montant) {
+            return redirect()->back()->with('error', 'Solde insuffisant.');
+        }
+
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            // Débiter l'expéditeur du montant total
+            $nouveauSoldeHote = $clientHote['solde'] - $montant;
+            $this->clientModel->update($clientId, ['solde' => $nouveauSoldeHote]);
+
+            // Créditer le destinataire (montant - frais)
+            $nouveauSoldeCible = $clientCible['solde'] + ($montant - $frais);
+            $this->clientModel->update($clientCible['id'], ['solde' => $nouveauSoldeCible]);
+
+            $transactionData = [
+                'montant'      => $montant,
+                'frais'        => $frais,
+                'date'         => date('Y-m-d H:i:s'),
+                'operation_id' => $operationId,
+                'client_hote'  => $clientId,
+                'client_cible' => $clientCible['id']
+            ];
+            $this->transactionsModel->insert($transactionData);
+
+            if ($db->transStatus() === false) {
+                throw new \Exception("Échec de la validation SQL du transfert.");
+            }
+
+            $db->transCommit();
+            return redirect()->to(site_url('client/dashboard'))->with('success', 'Transfert effectué avec succès.');
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return redirect()->back()->with('error', 'Erreur lors du transfert : ' . $e->getMessage());
+        }
+    }
+
+    // --- RETRAIT ---
+    public function retrait()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck) return $authCheck;
+
+        return view('client/retrait');
+    }
+
+    public function processRetrait()
+    {
+        $authCheck = $this->checkAuth();
+        if ($authCheck) return $authCheck;
+
+        $montant = (float) $this->request->getPost('montant');
+        $clientId = $this->session->get('id');
+
+        if ($montant < 100) {
+            return redirect()->back()->with('error', 'Le montant minimum est de 100.');
+        }
+
+        $client = $this->clientModel->find($clientId);
+        $operationId = 2; // ID Retrait
+
+        $fraisData = method_exists($this->fraisModel, 'calculerFrais') 
+            ? $this->fraisModel->calculerFrais($operationId, $montant)
+            : $this->fraisModel->calculFrais($operationId, $montant);
+            
+        $frais = $fraisData['montant_frais'] ?? $fraisData['montant'] ?? 0;
+
+        // Tester le solde (Montant + Frais dus pour le retrait)
+        if ($client['solde'] < ($montant + $frais)) {
+            return redirect()->back()->with('error', 'Votre solde est insuffisant pour couvrir le retrait et ses frais.');
+        }
+
+        $db = \Config\Database::connect();
+        $db->transBegin();
+
+        try {
+            // Débiter : solde - (montant + frais)
+            $nouveauSolde = $client['solde'] - ($montant + $frais);
+            $this->clientModel->update($clientId, ['solde' => $nouveauSolde]);
+
+            $transactionData = [
+                'montant'      => $montant,
+                'frais'        => $frais,
+                'date'         => date('Y-m-d H:i:s'),
+                'operation_id' => $operationId,
+                'client_hote'  => $clientId,
+                'client_cible' => null
+            ];
+            $this->transactionsModel->insert($transactionData);
+
+            if ($db->transStatus() === false) {
+                throw new \Exception("Échec SQL lors du traitement du retrait.");
+            }
+
+            $db->transCommit();
+            return redirect()->to(site_url('client/dashboard'))->with('success', 'Retrait effectué avec succès.');
+        } catch (\Exception $e) {
+            $db->transRollback();
+            return redirect()->back()->with('error', 'Erreur lors du retrait : ' . $e->getMessage());
         }
     }
 
     public function historique()
     {
         $authCheck = $this->checkAuth();
-        if ($authCheck) {
-            return $authCheck;
-        }
+        if ($authCheck) return $authCheck;
 
         $clientId = $this->session->get('id');
 
@@ -146,142 +283,5 @@ class ClientController extends BaseController
             ->findAll();
 
         return view('client/historique', ['transactions' => $transactions]);
-    }
-
-    public function transfert()
-    {
-        $authCheck = $this->checkAuth();
-        if ($authCheck) {
-            return $authCheck;
-        }
-
-        return view('client/transfert');
-    }
-
-    public function processTransfert()
-    {
-        $authCheck = $this->checkAuth();
-        if ($authCheck) {
-            return $authCheck;
-        }
-
-        $telephone = $this->request->getPost('telephone');
-        $montant = $this->request->getPost('montant');
-        $clientId = $this->session->get('id');
-
-        // Validation
-        if ($montant <= 0) {
-            return redirect()->back()->with('error', 'Le montant doit être positif.');
-        }
-
-        // Récupérer le client destinataire
-        $clientCible = $this->clientModel->where('telephone', $telephone)->first();
-        if (!$clientCible) {
-            return redirect()->back()->with('error', 'Numéro de téléphone introuvable.');
-        }
-
-        if ($clientCible['id'] == $clientId) {
-            return redirect()->back()->with('error', 'Vous ne pouvez pas vous transférer à vous-même.');
-        }
-
-        // Vérifier le solde
-        $clientHote = $this->clientModel->find($clientId);
-        if ($clientHote['solde'] < $montant) {
-            return redirect()->back()->with('error', 'Solde insuffisant.');
-        }
-
-        // Récupérer l'opération de transfert (id=2 par exemple)
-        $operationId = 2; // À adapter
-        $fraisData = $this->fraisModel->calculFrais($operationId, $montant);
-        $frais = $fraisData['montant'] ?? 0;
-
-        // Démarrer la transaction SQL
-        $this->clientModel->transStart();
-
-        try {
-            // Déduire du solde de l'expéditeur
-            $nouveauSoldeHote = $clientHote['solde'] - $montant;
-            $this->clientModel->update($clientId, ['solde' => $nouveauSoldeHote]);
-
-            // Ajouter au solde du destinataire
-            $nouveauSoldeCible = $clientCible['solde'] + $montant;
-            $this->clientModel->update($clientCible['id'], ['solde' => $nouveauSoldeCible]);
-
-            // Insertion de la transaction
-            $transactionData = [
-                'montant' => $montant,
-                'frais' => $frais,
-                'date' => date('Y-m-d H:i:s'),
-                'operation_id' => $operationId,
-                'client_hote' => $clientId,
-                'client_cible' => $clientCible['id']
-            ];
-            $this->transactionsModel->insert($transactionData);
-
-            $this->clientModel->transComplete();
-
-            return redirect()->to(base_url('client/dashboard'))->with('success', 'Transfert effectué avec succès.');
-        } catch (\Exception $e) {
-            $this->clientModel->transRollback();
-            return redirect()->back()->with('error', 'Erreur lors du transfert : ' . $e->getMessage());
-        }
-    }
-
-    public function retrait()
-    {
-        $authCheck = $this->checkAuth();
-        if ($authCheck) {
-            return $authCheck;
-        }
-
-        return view('client/retrait');
-    }
-
-    public function processRetrait()
-    {
-        $authCheck = $this->checkAuth();
-        if ($authCheck) {
-            return $authCheck;
-        }
-
-        $montant = $this->request->getPost('montant');
-        $clientId = $this->session->get('id');
-
-        if ($montant <= 0) {
-            return redirect()->back()->with('error', 'Le montant doit être positif.');
-        }
-
-        $client = $this->clientModel->find($clientId);
-        if ($client['solde'] < $montant) {
-            return redirect()->back()->with('error', 'Solde insuffisant.');
-        }
-
-        $operationId = 3; // Retrait
-        $fraisData = $this->fraisModel->calculFrais($operationId, $montant);
-        $frais = $fraisData['montant'] ?? 0;
-
-        $this->clientModel->transStart();
-
-        try {
-            $nouveauSolde = $client['solde'] - $montant;
-            $this->clientModel->update($clientId, ['solde' => $nouveauSolde]);
-
-            $transactionData = [
-                'montant' => $montant,
-                'frais' => $frais,
-                'date' => date('Y-m-d H:i:s'),
-                'operation_id' => $operationId,
-                'client_hote' => $clientId,
-                'client_cible' => null
-            ];
-            $this->transactionsModel->insert($transactionData);
-
-            $this->clientModel->transComplete();
-
-            return redirect()->to(base_url('client/dashboard'))->with('success', 'Retrait effectué avec succès.');
-        } catch (\Exception $e) {
-            $this->clientModel->transRollback();
-            return redirect()->back()->with('error', 'Erreur lors du retrait : ' . $e->getMessage());
-        }
     }
 }

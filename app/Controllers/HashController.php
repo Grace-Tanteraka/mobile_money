@@ -10,7 +10,7 @@ class HashController extends BaseController
 
     public function processHash(){
         $input = $this->request->getPost('input');
-        dd($input);
+        //dd($input);
         $hash = password_hash($input, PASSWORD_DEFAULT);
         return view('hash', ['hash' => $hash]);
     }

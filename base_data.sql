@@ -73,7 +73,7 @@ INSERT INTO transactions (montant, frais, date, operation_id, client_hote, clien
 (200000, 400, '2023-10-12 16:45:00', 3, 4, 1);
 
 INSERT INTO administrateur(nom, prenom, email, mdp) VALUES
-('admin', 'admin', 'admin@gmail.com', '$2y$10$DWj2dU4wTtDtrlJfevucmusTv7xfq8mubQ4oXtdDg7ipU5KlMrmou'); -- admin123
+('admin', 'admin', 'admin@gmail.com', '$2y$10$NCsi73Vx5wNGJICd882eeeG8Y6E5KePVZBSyA2CrLP8XRUAzuezrK'); -- admin123
 
 INSERT INTO administration(administrateur_id, operateur_id) VALUES
 (1, 1);

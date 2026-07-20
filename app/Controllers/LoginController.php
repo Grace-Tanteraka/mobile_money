@@ -23,16 +23,20 @@ class LoginController extends BaseController
 
     public function loginAuth()
     {
-        // On récupère les deux noms de champs possibles au cas où
-        $email    = $this->request->getPost('identifiant') ?? $this->request->getPost('email');
+        // On récupère le rôle choisi par l'utilisateur ('admin' ou 'client')
+        $role     = $this->request->getPost('role');
+        $email    = $this->request->getPost('email');
         $numero   = $this->request->getPost('telephone');
         $password = $this->request->getPost('mdp');
 
-        // 1. TENTATIVE DE CONNEXION ADMIN (Par Email)
-        if (!empty($email)) {
+        // 1. TENTATIVE DE CONNEXION ADMIN
+        if ($role === 'admin') {
+            if (empty($email)) {
+                return redirect()->to(site_url('login'))->with('error', 'Veuillez saisir votre email.');
+            }
+
             $admin = $this->adminModel->where('email', $email)->first();
 
-            // Corrigé : $admin['mdp'] au lieu de $admin['password'] (nom dans ton schéma SQLite)
             if ($admin && password_verify($password, $admin['mdp'])) {
                 $sessionData = [
                     'id'         => $admin['id'],
@@ -43,22 +47,21 @@ class LoginController extends BaseController
                 ];
 
                 session()->set($sessionData);
-                return redirect()->to(base_url('admin/dashboard'));
+                return redirect()->to(site_url('admin/dashboard'));
             }
 
-            return redirect()->to(base_url('login'))->with('error', 'Email ou mot de passe Administrateur incorrect.');
+            return redirect()->to(site_url('login'))->with('error', 'Email ou mot de passe Administrateur incorrect.');
         }
 
-        // 2. TENTATIVE DE CONNEXION CLIENT (Par Téléphone)
-        if (!empty($numero)) {
+        // 2. TENTATIVE DE CONNEXION CLIENT
+        if ($role === 'client') {
+            if (empty($numero)) {
+                return redirect()->to(site_url('login'))->with('error', 'Veuillez saisir votre numéro de téléphone.');
+            }
+
             $client = $this->clientModel->where('telephone', $numero)->first();
 
-            // ✅ CORRECTION CRITIQUE : On vérifie SI $client existe AVANT d'accéder à $client['id']
             if ($client) {
-                
-                // Si plus tard tu ajoutes un mot de passe client, décommente cette ligne :
-                // if (password_verify($password, $client['mdp'])) { ... }
-
                 $sessionData = [
                     'id'         => $client['id'],
                     'name'       => $client['prenom'] . ' ' . $client['nom'],
@@ -68,19 +71,18 @@ class LoginController extends BaseController
                 ];
 
                 session()->set($sessionData);
-                return redirect()->to(base_url('client/dashboard'));
+                return redirect()->to(site_url('client/dashboard'));
             }
 
-            return redirect()->to(base_url('login'))->with('error', 'Numéro de téléphone introuvable.');
+            return redirect()->to(site_url('login'))->with('error', 'Numéro de téléphone introuvable.');
         }
 
-        // 3. SI AUCUN CHAMP N'A ÉTÉ REMPLI
-        return redirect()->to(base_url('login'))->with('error', 'Veuillez saisir vos identifiants.');
+        return redirect()->to(site_url('login'))->with('error', 'Veuillez sélectionner un type de compte.');
     }
 
     public function logout()
     {
         session()->destroy();
-        return redirect()->to(base_url('login'));
+        return redirect()->to(site_url('login'));
     }
 }

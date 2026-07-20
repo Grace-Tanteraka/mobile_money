@@ -10,7 +10,7 @@ $routes->get('/login', 'LoginController::showLogin');
 $routes->post('/login', 'LoginController::loginAuth');
 $routes->get('/logout', 'LoginController::logout');
 
-$routes->group('admin', ['filter' => 'role'], function ($routes) { 
+$routes->group('/admin', function ($routes) { 
     $routes->get('dashboard', 'AdminstrateurController::index');
 });
 //$routes->get('/admin/dashboard', 'AdminstrateurController::index');
