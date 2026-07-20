@@ -57,7 +57,7 @@ class Database extends Config
     //     * @var array<string, mixed>
     //     */
        public array $default = [
-           'database'    => WRITEPATH . 'database/conge.db',
+           'database'    => WRITEPATH . 'database/mobile_money.db',
            'DBDriver'    => 'SQLite3',
            'DBPrefix'    => '',
            'DBDebug'     => true,
