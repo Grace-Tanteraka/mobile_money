@@ -85,10 +85,9 @@ class AdminController extends BaseController
             return $authCheck;
         }
 
-        $clients = $this->clientModel
-            ->select('client.*, operateur.nom as operateur_nom')
-            ->join('operateur', 'client.operateur_id = operateur.id')
-            ->paginate(10);
+        $adminId = session()->get('id');
+
+        $clients = $this->clientModel->findAllClientWithOperatorForOneAdministrateur($adminId);
 
         return view('admin/liste_client', [
             'clients' => $clients,
