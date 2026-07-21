@@ -101,3 +101,5 @@ VALUES ('Airtel -> Orange', 2, 3, 5.00);
 
 INSERT INTO comission (Nom, operateur_source_id, operateur_cible_id, taux_pourcentage) 
 VALUES ('Orange -> Airtel', 3, 2, 5.00);
+
+INSERT INTO promotion_frais (valeur) VALUES (10.0);
