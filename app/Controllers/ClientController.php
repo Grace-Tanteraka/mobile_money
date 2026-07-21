@@ -83,9 +83,7 @@ class ClientController extends BaseController
         $operationId = 1;
 
         // Adaptation selon ta méthode du FraisModel (calculerFrais ou calculFrais)
-        $fraisData = method_exists($this->fraisModel, 'calculerFrais')
-            ? $this->fraisModel->calculerFrais($operationId, $montant)
-            : $this->fraisModel->calculFrais($operationId, $montant);
+        $fraisData = $this->fraisModel->calculFrais($operationId, $montant);
 
         $frais = $fraisData['montant_frais'] ?? $fraisData['montant'] ?? 0;
 
@@ -98,7 +96,8 @@ class ClientController extends BaseController
 
             // Créditer : solde + (montant - frais)
             $nouveauSolde = $client['solde'] + ($montant - $frais);
-            $this->clientModel->update($clientId, ['solde' => $nouveauSolde]);
+            //$this->clientModel->update($clientId, ['solde' => $nouveauSolde]);
+            $db->table('client')->where('id', $clientId)->update(['solde' => $nouveauSolde]);
 
             $transactionData = [
                 'montant'      => $montant,
@@ -108,7 +107,7 @@ class ClientController extends BaseController
                 'client_hote'  => $clientId,
                 'client_cible' => null
             ];
-            $this->transactionsModel->insert($transactionData);
+            $db->table('transactions')->insert($transactionData);
 
             if ($db->transStatus() === false) {
                 throw new \Exception("Échec de l'insertion SQL de la transaction.");
@@ -138,8 +137,8 @@ class ClientController extends BaseController
             return $authCheck;
         }
 
-        $clientId    = $this->session->get('id');
-        $clientHote  = $this->clientModel->find($clientId);
+        $clientId   = $this->session->get('id');
+        $clientHote = $this->clientModel->find($clientId);
 
         if (!$clientHote) {
             return redirect()->back()->with('error', 'Session invalide ou client introuvable.');
@@ -153,14 +152,17 @@ class ClientController extends BaseController
             return redirect()->back()->with('error', 'Le montant minimum est de 100 Ar.');
         }
 
-        $opHote = $this->prefixeModel->getOperateurParNumero($clientHote['telephone']);
+        $opHote      = $this->prefixeModel->getOperateurParNumero($clientHote['telephone']);
         $operationId = 3; // ID 3 = Transfert
+
+        // Connexion unique DB pour gérer l'ensemble des transactions
+        $db = \Config\Database::connect();
 
         // =========================================================================
         // CAS 1 : ENVOI MULTIPLE (Même opérateur uniquement)
         // =========================================================================
         if ($typeEnvoi === 'multiple') {
-            $telephonesInput = $this->request->getPost('telephone'); // Ex: "0321111111, 0322222222"
+            $telephonesInput = $this->request->getPost('telephone');
             $telephones      = array_filter(array_map('trim', explode(',', (string) $telephonesInput)));
 
             if (count($telephones) < 2) {
@@ -201,40 +203,45 @@ class ClientController extends BaseController
                 return redirect()->back()->with('error', 'Solde insuffisant pour ce transfert multiple. Total requis : ' . number_format($totalGeneral, 2, ',', ' ') . ' Ar');
             }
 
-            // Transaction SQL
-            $this->clientModel->transStart();
+            // --- Début de la transaction manuelle $db ---
+            $db->transBegin();
 
-            foreach ($clientsCibles as $cible) {
-                // Insertion transaction
-                $this->transactionsModel->insert([
-                    'montant'          => $montantParPersonne,
-                    'frais'            => $fraisParPersonne,
-                    'valeur_commision' => 0.00,
-                    'date'             => date('Y-m-d H:i:s'),
-                    'operation_id'     => $operationId,
-                    'client_hote'      => $clientId,
-                    'client_cible'     => $cible['id']
-                ]);
+            try {
+                foreach ($clientsCibles as $cible) {
+                    // 1. Insertion transaction
+                    $db->table('transactions')->insert([
+                        'montant'          => $montantParPersonne,
+                        'frais'            => $fraisParPersonne,
+                        'valeur_commision' => 0.00,
+                        'date'             => date('Y-m-d H:i:s'),
+                        'operation_id'     => $operationId,
+                        'client_hote'      => $clientId,
+                        'client_cible'     => $cible['id']
+                    ]);
 
-                // Débit Hôte
-                $this->clientModel->set('solde', 'solde - ' . $costUnitaire, false)->update($clientId);
-                // Crédit Cible
-                $this->clientModel->set('solde', 'solde + ' . $montantParPersonne, false)->update($cible['id']);
+                    // 2. Débit Hôte
+                    $db->query("UPDATE client SET solde = solde - ? WHERE id = ?", [$costUnitaire, $clientId]);
+
+                    // 3. Crédit Cible
+                    $db->query("UPDATE client SET solde = solde + ? WHERE id = ?", [$montantParPersonne, $cible['id']]);
+                }
+
+                if ($db->transStatus() === false) {
+                    throw new \Exception("Une erreur est survenue lors du traitement du transfert multiple.");
+                }
+
+                $db->transCommit();
+                return redirect()->to(base_url('client/dashboard'))->with('success', "Envoi multiple de " . number_format($montantEntre, 2, ',', ' ') . " Ar divisé vers $nbCibles personnes réussi !");
+            } catch (\Exception $e) {
+                $db->transRollback();
+                return redirect()->back()->with('error', 'Erreur lors du transfert multiple : ' . $e->getMessage());
             }
-
-            $this->clientModel->transComplete();
-
-            if ($this->clientModel->transStatus() === false) {
-                return redirect()->back()->with('error', 'L\'envoi multiple a échoué.');
-            }
-
-            return redirect()->to(base_url('client/dashboard'))->with('success', "Envoi multiple de " . number_format($montantEntre, 2, ',', ' ') . " Ar divisé vers $nbCibles personnes réussi !");
         }
 
         // =========================================================================
         // CAS 2 : ENVOI UNIQUE
         // =========================================================================
-        $telephone = $this->request->getPost('telephone');
+        $telephone   = $this->request->getPost('telephone');
         $clientCible = $this->clientModel->where('telephone', $telephone)->first();
 
         if (!$clientCible) {
@@ -279,11 +286,11 @@ class ClientController extends BaseController
             return redirect()->back()->with('error', 'Solde insuffisant. Requis avec frais et commission : ' . number_format($totalADebiter, 2, ',', ' ') . ' Ar');
         }
 
-        // Transaction SQL
-        $this->clientModel->transStart();
+        // --- Début de la transaction manuelle $db ---
+        $db->transBegin();
 
         try {
-            // Enregistrement de la transaction avec la commission
+            // 1. Enregistrement de la transaction
             $transactionData = [
                 'montant'          => $montantAEnvoyer,
                 'frais'            => $frais,
@@ -293,19 +300,22 @@ class ClientController extends BaseController
                 'client_hote'      => $clientId,
                 'client_cible'     => $clientCible['id']
             ];
-            $this->transactionsModel->insert($transactionData);
+            $db->table('transactions')->insert($transactionData);
 
-            // Débit expéditeur (Montant envoyé + Frais transfert + Commission)
-            $this->clientModel->set('solde', 'solde - ' . $totalADebiter, false)->update($clientId);
+            // 2. Débit expéditeur
+            $db->query("UPDATE client SET solde = solde - ? WHERE id = ?", [$totalADebiter, $clientId]);
 
-            // Crédit destinataire (Montant brut + Frais de retrait s'ils étaient inclus)
-            $this->clientModel->set('solde', 'solde + ' . $montantAEnvoyer, false)->update($clientCible['id']);
+            // 3. Crédit destinataire
+            $db->query("UPDATE client SET solde = solde + ? WHERE id = ?", [$montantAEnvoyer, $clientCible['id']]);
 
-            $this->clientModel->transComplete();
+            if ($db->transStatus() === false) {
+                throw new \Exception("Échec du traitement de la transaction en base de données.");
+            }
 
+            $db->transCommit();
             return redirect()->to(base_url('client/dashboard'))->with('success', 'Transfert effectué avec succès.');
         } catch (\Exception $e) {
-            $this->clientModel->transRollback();
+            $db->transRollback();
             return redirect()->back()->with('error', 'Erreur lors du transfert : ' . $e->getMessage());
         }
     }
@@ -417,44 +427,51 @@ class ClientController extends BaseController
         $authCheck = $this->checkAuth();
         if ($authCheck) return $authCheck;
 
-        $montant = (float) $this->request->getPost('montant');
+        $montant  = (float) $this->request->getPost('montant');
         $clientId = $this->session->get('id');
 
         if ($montant < 100) {
-            return redirect()->back()->with('error', 'Le montant minimum est de 100.');
+            return redirect()->back()->with('error', 'Le montant minimum est de 100 Ar.');
         }
 
         $client = $this->clientModel->find($clientId);
-        $operationId = 2; // ID Retrait
+        if (!$client) {
+            return redirect()->back()->with('error', 'Client introuvable.');
+        }
+
+        $operationId = 2; // ID 2 = Retrait
 
         $fraisData = method_exists($this->fraisModel, 'calculerFrais')
             ? $this->fraisModel->calculerFrais($operationId, $montant)
             : $this->fraisModel->calculFrais($operationId, $montant);
 
-        $frais = $fraisData['montant_frais'] ?? $fraisData['montant'] ?? 0;
+        $frais = (float) ($fraisData['montant_frais'] ?? $fraisData['montant'] ?? 0);
+        $totalADebiter = $montant + $frais;
 
-        // Tester le solde (Montant + Frais dus pour le retrait)
-        if ($client['solde'] < ($montant + $frais)) {
+        // Vérification du solde (Montant + Frais)
+        if ((float)$client['solde'] < $totalADebiter) {
             return redirect()->back()->with('error', 'Votre solde est insuffisant pour couvrir le retrait et ses frais.');
         }
 
+        // Connexion unique DB pour la transaction
         $db = \Config\Database::connect();
         $db->transBegin();
 
         try {
-            // Débiter : solde - (montant + frais)
-            $nouveauSolde = $client['solde'] - ($montant + $frais);
-            $this->clientModel->update($clientId, ['solde' => $nouveauSolde]);
+            // 1. Débit du solde du client (Montant + Frais)
+            $db->query("UPDATE client SET solde = solde - ? WHERE id = ?", [$totalADebiter, $clientId]);
 
+            // 2. Insertion de l'historique de transaction
             $transactionData = [
-                'montant'      => $montant,
-                'frais'        => $frais,
-                'date'         => date('Y-m-d H:i:s'),
-                'operation_id' => $operationId,
-                'client_hote'  => $clientId,
-                'client_cible' => null
+                'montant'          => $montant,
+                'frais'            => $frais,
+                'valeur_commision' => 0.00,
+                'date'             => date('Y-m-d H:i:s'),
+                'operation_id'     => $operationId,
+                'client_hote'      => $clientId,
+                'client_cible'     => null
             ];
-            $this->transactionsModel->insert($transactionData);
+            $db->table('transactions')->insert($transactionData);
 
             if ($db->transStatus() === false) {
                 throw new \Exception("Échec SQL lors du traitement du retrait.");
