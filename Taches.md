@@ -28,3 +28,11 @@
 | - contraintes de formatage et decoupage des destinataires (mode unique/multiple)  | - calcul des montants a reconcilier / envoyer par operateur
 |                                                                                   | - route dediee admin/situation-gains et vues associees
 | optimisation design & UX (frontoffice)                                            | optimisation design & UX (backoffice)
+
+Notion de promotion % sur les frais de transfert de meme operateur
+Contrainte 
+- pourcentage en base (pas de date)
+- bonus : page de modification du pourcentag
+=> TODO
+- creer table et data
+- modifier fonction handle_transfert dans ClientController
