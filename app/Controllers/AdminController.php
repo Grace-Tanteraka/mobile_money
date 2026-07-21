@@ -102,18 +102,7 @@ class AdminController extends BaseController
             return $authCheck;
         }
 
-        $transactions = $this->transactionsModel
-            ->select('transactions.*, operation.libelle as operation_nom, 
-                     c1.nom as client_hote_nom, c2.nom as client_cible_nom')
-            ->join('operation', 'transactions.operation_id = operation.id')
-            ->join('client as c1', 'transactions.client_hote = c1.id')
-            ->join('client as c2', 'transactions.client_cible = c2.id', 'left')
-            ->groupStart()
-            ->where('transactions.client_hote', $clientId)
-            ->orWhere('transactions.client_cible', $clientId)
-            ->groupEnd()
-            ->orderBy('transactions.date', 'DESC')
-            ->findAll();
+        $transactions = $this->transactionsModel->getHistoricClient($clientId);
 
         $client = $this->clientModel->find($clientId);
 
