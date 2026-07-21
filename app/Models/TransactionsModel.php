@@ -42,6 +42,33 @@ class TransactionsModel extends Model
             ->findAll();
     }
 
+    public function getSommeEnvoyeeParClient(int $clientId): float
+    {
+        return (float) $this->select('SUM(montant) AS total_envoye')
+            ->where('client_hote', $clientId)
+            ->where('operation_id', 3) // 3 = Transfert
+            ->get()
+            ->getRowArray()['total_envoye'] ?? 0;
+    }
+
+    public function getSommeRecueParClient(int $clientId): float
+    {
+        return (float) $this->select('SUM(montant - frais - valeur_commision) AS total_recu')
+            ->where('client_cible', $clientId)
+            ->where('operation_id', 3)
+            ->get()
+            ->getRowArray()['total_recu'] ?? 0;
+    }
+
+    public function getSommeRetraitParClient(int $clientId): float
+    {
+        return (float) $this->select('SUM(montant) AS total_retrait')
+            ->where('client_hote', $clientId)
+            ->where('operation_id', 2) // 2 = Retrait
+            ->get()
+            ->getRowArray()['total_retrait'] ?? 0;
+    }
+
     public function saveTransaction(array $data): bool
     {
         return $this->insert($data) !== false;
@@ -88,6 +115,7 @@ class TransactionsModel extends Model
                     ->groupBy('operateur.id')
                     ->findAll();
     }
+
     public function getMontantsAEnvoyerParOperateur()
     {
         $db = \Config\Database::connect();
@@ -108,4 +136,36 @@ class TransactionsModel extends Model
         return $db->query($sql)->getResultArray();
     }
     
+    public function getHistoricClient($clientId)
+    {
+        return $this->select('transactions.*, operation.libelle as operation_nom, 
+                     c1.nom as client_hote_nom, c1.prenom as client_hote_prenom,
+                     c2.nom as client_cible_nom, c2.prenom as client_cible_prenom')
+            ->join('operation', 'transactions.operation_id = operation.id')
+            ->join('client as c1', 'transactions.client_hote = c1.id')
+            ->join('client as c2', 'transactions.client_cible = c2.id', 'left')
+            ->groupStart()
+            ->where('transactions.client_hote', $clientId)
+            ->orWhere('transactions.client_cible', $clientId)
+            ->groupEnd()
+            ->orderBy('transactions.date', 'DESC')
+            ->findAll();
+    }
+
+    public function getLast3Transaction($clientId)
+    {
+        return $this->select('transactions.*, operation.libelle as operation_nom, 
+                     c1.nom as client_hote_nom, c1.prenom as client_hote_prenom,
+                     c2.nom as client_cible_nom, c2.prenom as client_cible_prenom')
+            ->join('operation', 'transactions.operation_id = operation.id')
+            ->join('client as c1', 'transactions.client_hote = c1.id')
+            ->join('client as c2', 'transactions.client_cible = c2.id', 'left')
+            ->groupStart()
+            ->where('transactions.client_hote', $clientId)
+            ->orWhere('transactions.client_cible', $clientId)
+            ->groupEnd()
+            ->orderBy('transactions.date', 'DESC')
+            ->limit(3)
+            ->findAll();
+    }
 }
