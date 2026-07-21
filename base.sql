@@ -76,3 +76,8 @@ CREATE TABLE comission (
     FOREIGN KEY (operateur_source_id) REFERENCES operateur(id),
     FOREIGN KEY (operateur_cible_id) REFERENCES operateur(id)
 );
+
+CREATE TABLE promotion_frais (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    valeur DECIMAL(5, 2) NOT NULL
+);
