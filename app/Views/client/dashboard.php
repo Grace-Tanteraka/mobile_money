@@ -198,7 +198,7 @@
                                     <?php foreach ($lastOperation as $op) : ?>
                                         <?php
                                         // 1. Déterminer si le client connecté est l'expéditeur (hôte) ou le destinataire (cible)
-                                        $isHote = ($op['client_hote'] == $client['id']);
+                                        $isHote = ($op['client_hote'] == $client['id'] && $op['operation_id'] != 1);
 
                                         // 2. Définir le tiers (Interlocuteur)
                                         if ($isHote) {
@@ -214,7 +214,11 @@
                                             $tiers = esc($op['client_hote_nom'] . ' ' . $op['client_hote_prenom']);
                                             $signe = '+';
                                             $classMontant = 'text-success';
-                                            $badgeType = '<span class="badge bg-success-subtle text-success"><i class="fa-solid fa-arrow-down me-1"></i> Réception</span>';
+                                            if($op['operation_id'] == 1) {
+                                                $badgeType = '<span class="badge bg-success-subtle text-success"><i class="fa-solid fa-arrow-down me-1"></i> Dépôt</span>';
+                                            } else {
+                                                $badgeType = '<span class="badge bg-success-subtle text-success"><i class="fa-solid fa-arrow-down me-1"></i> Réception</span>';
+                                            }
                                         }
                                         ?>
                                         <tr>
