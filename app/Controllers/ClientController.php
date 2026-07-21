@@ -336,9 +336,9 @@ class ClientController extends BaseController
     public function update_eparge()
     {
         $epargne = (float) $this->request->getPost('epargne');
-        $clientId = $this->session->get('id');
+        $clientId = (int)$this->session->get('id');
         $db = \Config\Database::connect();
-        $db->query("UPDATE client SET epargne = ? WHERE id = ?", [$epargne, $clientId['id']]);
+        $db->query("UPDATE client SET epargne = ? WHERE id = ?", [$epargne, $clientId]);
         return redirect()->to(base_url('client/dashboard'))->with('success', 'epargne modifier');
     }
 
