@@ -8,6 +8,7 @@ use App\Models\OperationModel;
 use App\Models\FraisModel;
 use App\Models\PrefixeModel;
 use App\Models\ComissionModel;
+use App\Models\PromotionFraisModel;
 
 class ClientController extends BaseController
 {
@@ -18,6 +19,7 @@ class ClientController extends BaseController
     protected $fraisModel;
     protected $prefixeModel;
     protected $comissionModel;
+    protected $promotionFraisModel;
 
     public function __construct()
     {
@@ -28,6 +30,7 @@ class ClientController extends BaseController
         $this->fraisModel = new FraisModel();
         $this->prefixeModel = new PrefixeModel();
         $this->comissionModel = new ComissionModel();
+        $this->promotionFraisModel = new PromotionFraisModel();
     }
 
     protected function checkAuth()
@@ -258,7 +261,7 @@ class ClientController extends BaseController
         // 1. Frais de retrait inclus (Uniquement sur le MÊME réseau)
         $fraisRetraitInclus = 0.00;
         if ($inclureRetrait && $estMemeOperateur) {
-            $fraisRetraitData   = $this->fraisModel->calculerFrais(2, $montantEntre); // 2 = Retrait
+            $fraisRetraitData   = $this->fraisModel->calculerFrais(2, $montantEntre);
             $fraisRetraitInclus = $fraisRetraitData ? (float) ($fraisRetraitData['montant_frais'] ?? $fraisRetraitData['montant'] ?? 0) : 0.00;
         }
 
@@ -267,6 +270,13 @@ class ClientController extends BaseController
         // 2. Frais de transfert standards
         $fraisTransfertData = $this->fraisModel->calculerFrais($operationId, $montantAEnvoyer);
         $frais              = $fraisTransfertData ? (float) ($fraisTransfertData['montant_frais'] ?? $fraisTransfertData['montant'] ?? 0) : 0.00;
+
+        if ($estMemeOperateur) {
+            $promotion = $this->promotionFraisModel->getPromotionValue();
+            $promotion_value = $promotion ? (float) ($promotion['valeur'] ?? 0) : 0.00;
+            $poucentage = $frais * $promotion_value / 100;
+            $frais = $frais - $poucentage;
+        }
 
         // 3. Commission Inter-Opérateurs
         $commissionValue = 0.00;
