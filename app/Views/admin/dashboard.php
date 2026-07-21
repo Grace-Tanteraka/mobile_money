@@ -65,9 +65,6 @@
                     <li>
                         <a href="<?= base_url('admin/clients') ?>" class="nav-link"><i class="fa-solid fa-users me-2"></i>Clients</a>
                     </li>
-                    <li>
-                        <a href="<?= base_url('admin/gains') ?>" class="nav-link active"><i class="fa-solid fa-wallet me-2"></i>Situation des Gains</a>
-                    </li>
                 </ul>
                 <hr>
                 <a href="<?= base_url('logout') ?>" class="btn btn-outline-danger w-100"><i class="fa-solid fa-right-from-bracket me-2"></i>Déconnexion</a>
@@ -112,24 +109,7 @@
                                     <div>
                                         <small class="text-muted fw-semibold text-uppercase">Frais / Commission Inter-Op</small>
                                         <h3 class="mb-0 fw-bold text-info">
-                                            <?= number_format($detailGains['total_interop'] ?? $detailGains['total_commission'] ?? 0, 2, ',', ' ') ?> Ar
-                                        </h3>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Frais d'inclusion -->
-                        <div class="col-12 col-sm-6 col-xl-4">
-                            <div class="card card-stat shadow-sm p-3 border-start border-warning border-4">
-                                <div class="d-flex align-items-center">
-                                    <div class="icon-box bg-warning-subtle text-warning me-3">
-                                        <i class="fa-solid fa-percent fa-lg"></i>
-                                    </div>
-                                    <div>
-                                        <small class="text-muted fw-semibold text-uppercase">Frais d'inclusion</small>
-                                        <h3 class="mb-0 fw-bold text-warning">
-                                            <?= number_format($detailGains['total_inclusion'] ?? 0, 2, ',', ' ') ?> Ar
+                                            <?= number_format($detailGains['total_commissions_interop'] ?? 0, 2, ',', ' ') ?> Ar
                                         </h3>
                                     </div>
                                 </div>
@@ -141,22 +121,25 @@
                 <!-- 2. Zone des Graphiques -->
                 <div class="row mb-4">
                     <!-- Chart 1 : Gains par Type d'Opération -->
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white py-3">
-                            <h5 class="mb-0 fw-bold">Gains par Type d'Opération</h5>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="chartGainsOps"></canvas>
+                    <div class="col-md-4">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white py-3">
+                                <h5 class="mb-0 fw-bold">Gains par Type d'Opération</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartGainsOps"></canvas>
+                            </div>
                         </div>
                     </div>
-
                     <!-- Chart 2 : Gains par Opérateur -->
-                    <div class="card border-0 shadow-sm">
-                        <div class="card-header bg-white py-3">
-                            <h5 class="mb-0 fw-bold">Gains par Opérateur</h5>
-                        </div>
-                        <div class="card-body">
-                            <canvas id="chartGainsOperateurs"></canvas>
+                    <div class="col-md-8">
+                        <div class="card border-0 shadow-sm">
+                            <div class="card-header bg-white py-3">
+                                <h5 class="mb-0 fw-bold">Gains par Opérateur</h5>
+                            </div>
+                            <div class="card-body">
+                                <canvas id="chartGainsOperateurs"></canvas>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -170,11 +153,11 @@
         // --- Extraction dynamique des données PHP vers JS ---
         const gainsOpsRaw = <?= json_encode($gainsOps ?? []) ?>;
         const labelsOps = gainsOpsRaw.map(item => item.libelle || item.operation || 'Op ' + item.operation_id);
-        const valuesOps = gainsOpsRaw.map(item => parseFloat(item.total_gain || item.gain || 0));
+        const valuesOps = gainsOpsRaw.map(item => parseFloat(item.gain_total || item.gain || 0));
 
         const gainsOperateursRaw = <?= json_encode($gainsOperateurs ?? []) ?>;
-        const labelsOperateurs = gainsOperateursRaw.map(item => item.nom_operateur || item.nom || item.nom_op || 'Opérateur');
-        const valuesOperateurs = gainsOperateursRaw.map(item => parseFloat(item.total_gain || item.gain || 0));
+        const labelsOperateurs = gainsOperateursRaw.map(item => item.operateur || item.nom || item.nom_op || 'Opérateur');
+        const valuesOperateurs = gainsOperateursRaw.map(item => parseFloat(item.gain_total || item.gain || 0));
 
         const operationColors = ['#0ea5e9', '#22c55e', '#f59e0b', '#ef4444', '#8b5cf6'];
 
