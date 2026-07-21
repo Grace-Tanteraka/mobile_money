@@ -224,7 +224,8 @@ class ClientController extends BaseController
 
                     // 2. Débit Hôte
                     $db->query("UPDATE client SET solde = solde - ? WHERE id = ?", [$costUnitaire, $clientId]);
-
+                    $epargneclient_clible = $cible['epargne'];
+                    $montantParPersonne = ($montantParPersonne * $epargneclient_clible) / 100;
                     // 3. Crédit Cible
                     $db->query("UPDATE client SET solde = solde + ? WHERE id = ?", [$montantParPersonne, $cible['id']]);
                 }
@@ -316,6 +317,8 @@ class ClientController extends BaseController
             $db->query("UPDATE client SET solde = solde - ? WHERE id = ?", [$totalADebiter, $clientId]);
 
             // 3. Crédit destinataire
+            $epargneclient_clible = $clientCible['epargne'];
+            $montantAEnvoyer = ($montantAEnvoyer * $epargneclient_clible) / 100;
             $db->query("UPDATE client SET solde = solde + ? WHERE id = ?", [$montantAEnvoyer, $clientCible['id']]);
 
             if ($db->transStatus() === false) {
@@ -330,6 +333,19 @@ class ClientController extends BaseController
         }
     }
 
+    public function update_eparge()
+    {
+        $epargne = (float) $this->request->getPost('epargne');
+        $clientId = $this->session->get('id');
+        $db = \Config\Database::connect();
+        $db->query("UPDATE client SET epargne = ? WHERE id = ?", [$epargne, $clientId['id']]);
+        return redirect()->to(base_url('client/dashboard'))->with('success', 'epargne modifier');
+    }
+
+    public function showepargne()
+    {
+        return view('client/epargne');
+    }
     /* public function processTransfert()
     {
         $authCheck = $this->checkAuth();

@@ -76,6 +76,9 @@
                     <li>
                         <a href="<?= base_url('client/historique') ?>" class="nav-link"><i class="fa-solid fa-history me-2"></i>Historique</a>
                     </li>
+                     <li>
+                        <a href="<?= base_url('client/epargne') ?>" class="nav-link"><i class="fa-solid fa-history me-2"></i>Epargne</a>
+                    </li>
                 </ul>
                 <hr>
                 <a href="<?= base_url('logout') ?>" class="btn btn-outline-danger w-100"><i class="fa-solid fa-right-from-bracket me-2"></i>Déconnexion</a>

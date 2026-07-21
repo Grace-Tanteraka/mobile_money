@@ -47,6 +47,8 @@ $routes->group('client', ['filter' => 'role:client'], function ($routes) {
     // Ancien formulaire unique (dépôt/retrait/transfert regroupés) : conservé tel quel.
     $routes->get('transaction', 'TransactionController::index');
     $routes->post('processTransaction', 'TransactionController::processTransaction');
+    $routes->post('epargne_modifie','ClientController::update_eparge');
+    $routes->get('epargne','ClientController::showepargne');
 
 });
 

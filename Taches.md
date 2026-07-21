@@ -36,3 +36,11 @@ Contrainte
 => TODO
 - creer table et data
 - modifier fonction handle_transfert dans ClientController
+
+Notion d'epargne :
+-le client choisie % a epargner(page epargne.php)
+-l'epargne va vers le compte epargne et le reste va vers son compte normale 
+
+Todo:
+-Cree un table epargne
+-Modifier la fonction processeTransfert pour cette modif

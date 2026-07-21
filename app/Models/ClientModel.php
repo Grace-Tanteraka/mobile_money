@@ -16,9 +16,10 @@ class ClientModel extends Model
         'prenom',
         'operateur_id',
         'telephone',
-        'solde'
+        'solde',
+        'epargne'
     ];
-    
+
 
     public function verificationLogin(string $email, string $password): ?array
     {
@@ -45,4 +46,8 @@ class ClientModel extends Model
         return $this->where('telephone', $telephone)->first();
     }
 
+    public function getepargne(int $id_client)
+    {
+        return $this->where('id', $id_client)->first();
+    }
 }
