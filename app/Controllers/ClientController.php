@@ -49,6 +49,10 @@ class ClientController extends BaseController
         $data = [
             'clientName' => $this->session->get('name'),
             'client' => $client,
+            'totalEnvoye' => $this->transactionsModel->getSommeEnvoyeeParClient($clientId),
+            'totalRecu' => $this->transactionsModel->getSommeRecueParClient($clientId),
+            'totalRetrait' => $this->transactionsModel->getSommeRetraitParClient($clientId),
+            'lastOperation' => $this->transactionsModel->getLast3Transaction($clientId),
             'solde' => $client['solde'] ?? 0
         ];
 
@@ -471,19 +475,7 @@ class ClientController extends BaseController
 
         $clientId = $this->session->get('id');
 
-        $transactions = $this->transactionsModel
-            ->select('transactions.*, operation.libelle as operation_nom, 
-                     c1.nom as client_hote_nom, c1.prenom as client_hote_prenom,
-                     c2.nom as client_cible_nom, c2.prenom as client_cible_prenom')
-            ->join('operation', 'transactions.operation_id = operation.id')
-            ->join('client as c1', 'transactions.client_hote = c1.id')
-            ->join('client as c2', 'transactions.client_cible = c2.id', 'left')
-            ->groupStart()
-            ->where('transactions.client_hote', $clientId)
-            ->orWhere('transactions.client_cible', $clientId)
-            ->groupEnd()
-            ->orderBy('transactions.date', 'DESC')
-            ->findAll();
+        $transactions = $this->transactionsModel->getHistoricClient($clientId);
 
         return view('client/historique', ['transactions' => $transactions]);
     }
