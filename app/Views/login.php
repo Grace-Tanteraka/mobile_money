@@ -97,7 +97,7 @@
                         <label for="telephone" class="form-label fw-semibold">Numéro de téléphone</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light"><i class="fa-solid fa-phone"></i></span>
-                            <input type="text" name="telephone" id="telephone" class="form-control" placeholder="ex: 0341234567" required>
+                            <input type="text" name="telephone" id="telephone" class="form-control" value="0341234567" required>
                         </div>
                     </div>
                 </div>
@@ -108,14 +108,14 @@
                         <label for="email" class="form-label fw-semibold">Email</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light"><i class="fa-solid fa-envelope"></i></span>
-                            <input type="email" name="email" id="email" class="form-control">
+                            <input type="email" name="email" id="email" class="form-control" value="admin@gmail.com">
                         </div>
                     </div>
                     <div class="mb-3">
                         <label for="mdp" class="form-label fw-semibold">Mot de passe</label>
                         <div class="input-group">
                             <span class="input-group-text bg-light"><i class="fa-solid fa-lock"></i></span>
-                            <input type="password" name="mdp" id="mdp" class="form-control">
+                            <input type="password" name="mdp" id="mdp" class="form-control" value="admin123">
                         </div>
                     </div>
                 </div>
