@@ -7,6 +7,7 @@ use App\Models\OperationModel;
 use App\Models\OperateurModel;
 use App\Models\ClientModel;
 use App\Models\AdminstrateurModel;
+use App\Models\PromotionFraisModel;
 
 class AdminController extends BaseController
 {
@@ -16,6 +17,7 @@ class AdminController extends BaseController
     protected $operateurModel;
     protected $clientModel;
     protected $administrateurModel;
+    protected $promotionFraisModel;
 
     public function __construct()
     {
@@ -25,6 +27,7 @@ class AdminController extends BaseController
         $this->operateurModel = new OperateurModel();
         $this->clientModel = new ClientModel();
         $this->administrateurModel = new AdminstrateurModel();
+        $this->promotionFraisModel = new PromotionFraisModel();
     }
 
     protected function checkAuth()
@@ -124,5 +127,15 @@ class AdminController extends BaseController
         ];
 
         return view('admin/dashboard', $data);
+    }
+
+    public function showUpdatePromotionForm(){
+        $promotion = $this->promotionFraisModel->getPromotionValue();
+
+        $data = [
+            'promotion' => $promotion
+        ];
+
+        return view('admin/promotion', $data);
     }
 }

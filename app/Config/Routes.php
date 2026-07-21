@@ -21,6 +21,8 @@ $routes->group('admin', ['filter' => 'role:admin'], function ($routes) {
     $routes->get('dashboard', 'AdminController::situationGains');
     $routes->get('clients', 'AdminController::listeClient');
     $routes->get('clients/transactions/(:num)', 'AdminController::voirTransactionsClient/$1');
+
+    $routes->get('updatePromotion', 'AdminController::showUpdatePromotionForm');
 });
 
 // ------------------------------------------------------------------

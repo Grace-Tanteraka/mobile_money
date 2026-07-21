@@ -65,6 +65,9 @@
                     <li>
                         <a href="<?= base_url('admin/clients') ?>" class="nav-link"><i class="fa-solid fa-users me-2"></i>Clients</a>
                     </li>
+                    <li class="nav-item">
+                        <a href="<?= base_url('admin/promotion') ?>" class="nav-link"><i class="fa-solid fa-users me-2"></i>Gerer la promotion</a>
+                    </li>
                 </ul>
                 <hr>
                 <a href="<?= base_url('logout') ?>" class="btn btn-outline-danger w-100"><i class="fa-solid fa-right-from-bracket me-2"></i>Déconnexion</a>
